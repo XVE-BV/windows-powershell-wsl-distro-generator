@@ -33,14 +33,17 @@ RUN docker-php-ext-configure gd --with-jpeg \
 RUN apk del .build-deps \
     && rm -rf /tmp/*
 
-
 ## Vendor stage: install global Composer packages for caching
 FROM builder AS vendor
-# Set COMPOSER_HOME to a known directory to capture global packages
-ENV COMPOSER_HOME=/composer
-# Install Laravel installer globally (cached as long as this RUN line doesn't change)
-RUN composer global require laravel/installer --prefer-dist --no-dev --optimize-autoloader
-
+# Install runtime libraries needed by PHP extensions
+RUN apk add --no-cache \
+        libpng jpeg libzip zip libpq icu libgomp imagemagick
+# Set COMPOSER_HOME for global packages
+ENV COMPOSER_HOME=/composer \
+    PATH="/composer/vendor/bin:$PATH"
+# Install Laravel installer globally and optimize autoloader
+RUN composer global require laravel/installer --prefer-dist \
+    && composer global dump-autoload --optimize
 
 ## Final stage: runtime image
 FROM php:8.4-fpm-alpine
@@ -54,7 +57,6 @@ COPY --from=builder /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
 
 # Copy global Composer packages (including Laravel installer)
 COPY --from=vendor /composer /composer
-# Ensure global composer bin is in PATH
 ENV PATH="/composer/vendor/bin:$PATH"
 
 # Install runtime-only packages and tools
