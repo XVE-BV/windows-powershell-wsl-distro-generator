@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Builds a Docker image, exports its filesystem for WSL import, and uploads as a GitHub Release asset.
+  Builds a Docker image, exports its filesystem for WSL import, and uploads as a GitHub Release asset via REST API.
 #>
 
 [CmdletBinding()]
@@ -8,99 +8,91 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+# 1) Setup
 # Resolve script directory
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-# Config paths
+# Paths and names
 $composeFile = Join-Path $scriptDir 'compose.yml'
 $serviceName = 'xve-distro'
 $imageName   = 'xve-distro'
 $container   = 'xve-builder'
 $outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
 
-# GitHub settings (replace with your actual owner/repo)
-$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'
+# GitHub repo settings (owner/repo)
+$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'  # replace
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
-# Retrieve PAT from env or Windows user variable
-$pat = if ($Env:GITHUB_TOKEN) { $Env:GITHUB_TOKEN } else { [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User') }
 
-# Helper: upload via REST API
-function Upload-ToGitHubRelease {
-    param(
-        [Parameter(Mandatory)] [string]$releaseTag,
-        [Parameter(Mandatory)] [string]$filePath
-    )
-    $apiUrl = "https://api.github.com/repos/$ghRepo/releases"
-    $headers = @{
-        Authorization = "token $pat";
-        Accept        = 'application/vnd.github+json';
-        'User-Agent'  = 'XVE-Export-Script'
-    }
-    try {
-        # Attempt to create new release
-        $body = @{ tag_name = $releaseTag; name = "XVE Distro $releaseTag"; prerelease = $true } | ConvertTo-Json
-        $release = Invoke-RestMethod -Method Post -Uri $apiUrl -Headers $headers -Body $body -ErrorAction Stop
-    } catch {
-        # Handle 'repository is empty' error explicitly
-        $errorContent = $_.Exception.Response.Content | ConvertFrom-Json -ErrorAction SilentlyContinue
-        if ($errorContent.message -eq 'Repository is empty.') {
-            Throw "Cannot create release: repository is empty. Push an initial commit first."
-        }
-        # Otherwise, fetch existing release by tag
-        $release = Invoke-RestMethod -Method Get -Uri "$apiUrl/tags/$releaseTag" -Headers $headers -ErrorAction Stop
-    }
-    # Prepare upload URL
-    $uploadUrl = ($release.upload_url -split '\{')[0]
-    Write-Host "Debug: upload URL = $uploadUrl"
-    try {
-        [Uri]$uriTest = $uploadUrl
-    } catch {
-        Throw "Computed upload URL is invalid: $uploadUrl"
-    }
-    # Construct final upload URI
-    $fileName  = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
-    $uploadUri = "$uploadUrl?name=$fileName"
-    Write-Host "Debug: full upload URI = $uploadUri"
-    # Upload asset
-    try {
-        Invoke-RestMethod -Method Post -Uri $uploadUri -Headers $headers -InFile $filePath -ErrorAction Stop
-    } catch {
-        Throw "Failed to upload asset to GitHub: $($_.Exception.Message)"
-    }
+# Retrieve GitHub PAT: first check environment, then Windows user vars
+$pat = $Env:GITHUB_TOKEN
+if (-not $pat) {
+    $pat = [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User')
 }
 
-# Main logic
+# Function to create or fetch a release and upload asset
+function Upload-ReleaseAsset {
+    param(
+        [string]$repo,
+        [string]$tag,
+        [string]$filePath
+    )
+    # Headers for GitHub API
+    $apiBaseUrl = "https://api.github.com"
+    $headers = @{ Authorization = "token $pat"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'XVE-Export-Script' }
+
+    # 1) Create release
+    $createUrl = "$apiBaseUrl/repos/$repo/releases"
+    $body = @{ tag_name = $tag; name = "XVE Distro $tag"; prerelease = $true } | ConvertTo-Json
+    try {
+        $release = Invoke-RestMethod -Method Post -Uri $createUrl -Headers $headers -Body $body -ErrorAction Stop
+    } catch {
+        # If release exists or repo empty, fetch existing
+        $existingUrl = "$apiBaseUrl/repos/$repo/releases/tags/$tag"
+        $release = Invoke-RestMethod -Method Get -Uri $existingUrl -Headers $headers -ErrorAction Stop
+    }
+
+        # 2) Upload asset using uploads.github.com domain
+    # Use release ID to construct asset upload URL
+    $uploadDomain = "https://uploads.github.com"
+    $assetName = [System.Uri]::EscapeDataString((Split-Path $filePath -Leaf))
+    $uploadUrl = "$uploadDomain/repos/$repo/releases/$($release.id)/assets?name=$assetName"
+    # Perform upload
+    Invoke-RestMethod -Method Post -Uri $uploadUrl -Headers @{ Authorization = "token $pat"; 'Content-Type'='application/octet-stream'; 'User-Agent'='XVE-Export-Script' } -InFile $filePath -ErrorAction Stop -Method Post -Uri $uploadUri -Headers @{ Authorization = "token $pat"; 'Content-Type'='application/octet-stream'; 'User-Agent'='XVE-Export-Script' } -InFile $filePath -ErrorAction Stop
+}
+
+# 2) Main steps
 try {
-    Write-Host "1/4: Building image '$imageName'..."
+    # Build image
+    Write-Host "Building image '$imageName'..."
     Push-Location $scriptDir
     $env:COMPOSE_BAKE = 'true'
     $env:BUILDX_BAKE_ENTITLEMENTS_FS = '0'
     docker buildx bake -f $composeFile $serviceName
     Pop-Location
 
-    Write-Host "2/4: Creating temporary container '$container'..."
+    # Create temporary container
+    Write-Host "Creating temporary container '$container'..."
     docker create --name $container $imageName | Out-Null
 
-    Write-Host "3/4: Exporting filesystem to '$outputTar'..."
+    # Export filesystem
+    Write-Host "Exporting filesystem to '$outputTar'..."
     docker export --output $outputTar $container
 
-    Write-Host "4/4: Uploading to GitHub release '$versionTag'..."
-    if (Get-Command gh -ErrorAction SilentlyContinue) {
-        gh auth status | Out-Null
-        gh release create $versionTag $outputTar --repo $ghRepo --title "XVE Distro $versionTag" --notes "Automated export on $(Get-Date -Format o)" --prerelease
-    } elseif ($pat) {
-        Upload-ToGitHubRelease -releaseTag $versionTag -filePath $outputTar
+    # Upload if PAT present
+    if ($pat) {
+        Write-Host "Uploading '$outputTar' to GitHub release '$versionTag'..."
+        Upload-ReleaseAsset -repo $ghRepo -tag $versionTag -filePath $outputTar
     } else {
-        Write-Warning "Neither GitHub CLI nor GITHUB_TOKEN found; skipping upload."
+        Write-Warning "GITHUB_TOKEN not set; skipping upload."
     }
 } catch {
-    Write-Error "ERROR: $_"
+    Write-Error "ERROR during build or upload: $_"
     exit 1
 } finally {
-    # Cleanup temporary container
+    # Cleanup container
     if (docker ps -a --format '{{.Names}}' | Select-String -Pattern "^$container$") {
         Write-Host "Removing container '$container'..."
         docker rm $container | Out-Null
     }
-    Write-Host "`nDone!" -ForegroundColor Green
+    Write-Host "Done!" -ForegroundColor Green
 }
