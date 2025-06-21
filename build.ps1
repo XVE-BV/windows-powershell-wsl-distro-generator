@@ -81,7 +81,15 @@ try {
     # Upload if PAT present
     if ($pat) {
         Write-Host "Uploading '$outputTar' to GitHub release '$versionTag'..."
-        Upload-ReleaseAsset -repo $ghRepo -tag $versionTag -filePath $outputTar
+
+        Invoke-RestMethod `
+          -Method Post `
+          -Uri $uploadUrl `
+          -Headers @{ Authorization = "token $pat" } `
+          -InFile $filePath `
+          -ContentType 'application/octet-stream' `
+          -ErrorAction Stop
+
     } else {
         Write-Warning "GITHUB_TOKEN not set; skipping upload."
     }
