@@ -13,7 +13,7 @@ $composeFile = 'compose.yml'
 $serviceName = 'xve-distro'
 $imageName = 'xve-distro'
 $container = 'xve-builder'
-$outputTar = 'xve-distro.tar'
+$outputTar = '../xve-distro.tar'
 
 
 try {
