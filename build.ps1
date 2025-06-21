@@ -43,12 +43,36 @@ function Upload-ReleaseAsset {
         $rel = Invoke-RestMethod -Method Post -Uri "$api/repos/$repo/releases" -Headers $headers -Body $body -ErrorAction Stop
     }
 
-    # Upload asset
-    $assetName = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
-    $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($rel.id)/assets?name=$assetName"
-    Write-Host "Uploading asset to $uploadUrl"
-    Invoke-RestMethod -Method Post -Uri $uploadUrl -Headers @{ Authorization = "token $pat"; 'Content-Type'='application/octet-stream'; 'User-Agent'='XVE-Export-Script' } -InFile $filePath -ErrorAction Stop
-    Write-Host 'Upload complete.'
+     # Upload asset with progress bar via WebClient
+     $assetName = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
+     $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($rel.id)/assets?name=$assetName"
+     Write-Host "Uploading asset to $uploadUrl with progress..."
+     # Create WebClient and hook progress events
+     $wc = New-Object System.Net.WebClient
+     $wc.Headers.Add('Authorization',"token $pat")
+     $wc.Headers.Add('User-Agent','XVE-Export-Script')
+     $progressDone = $false
+
+     $wc.add_UploadProgressChanged({
+         param($sender, $e)
+         Write-Progress `
+       -Activity "Uploading $assetName" `
+       -Status ("{0:N0} / {1:N0} bytes" -f $e.BytesSent, $e.TotalBytesToSend) `
+       -PercentComplete $e.ProgressPercentage
+     })
+     $wc.add_UploadFileCompleted({
+         $script:progressDone = $true
+     })
+
+     # Start async upload
+     $uri = [Uri] $uploadUrl
+     $wc.UploadFileAsync($uri, 'POST', $filePath)
+
+     # Wait for it to finish
+     while (-not $progressDone) { Start-Sleep -Milliseconds 100 }
+    
+     $wc.Dispose()
+     Write-Host 'Upload complete.'
 }
 
 # Main
