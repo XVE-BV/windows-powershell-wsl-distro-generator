@@ -18,8 +18,8 @@ $imageName   = 'xve-distro'
 $container   = 'xve-builder'
 $outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
 
-# GitHub settings
-$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'           # replace with your owner/repo
+# GitHub settings (replace with your actual owner/repo)
+$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
 # Retrieve PAT from env or Windows user variable
 $pat = if ($Env:GITHUB_TOKEN) { $Env:GITHUB_TOKEN } else { [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User') }
@@ -41,23 +41,32 @@ function Upload-ToGitHubRelease {
         $body = @{ tag_name = $releaseTag; name = "XVE Distro $releaseTag"; prerelease = $true } | ConvertTo-Json
         $release = Invoke-RestMethod -Method Post -Uri $apiUrl -Headers $headers -Body $body -ErrorAction Stop
     } catch {
-        # If repository is empty or release exists, fetch existing
-        $msg = ($_ | Select-Object -ExpandProperty Exception).Exception.Response.Content | ConvertFrom-Json -ErrorAction SilentlyContinue
-        if ($msg.message -eq 'Repository is empty.') {
+        # Handle 'repository is empty' error explicitly
+        $errorContent = $_.Exception.Response.Content | ConvertFrom-Json -ErrorAction SilentlyContinue
+        if ($errorContent.message -eq 'Repository is empty.') {
             Throw "Cannot create release: repository is empty. Push an initial commit first."
         }
-        # Fetch existing by tag
+        # Otherwise, fetch existing release by tag
         $release = Invoke-RestMethod -Method Get -Uri "$apiUrl/tags/$releaseTag" -Headers $headers -ErrorAction Stop
     }
     # Prepare upload URL
     $uploadUrl = ($release.upload_url -split '\{')[0]
-    if (-not [Uri]::IsWellFormedUriString($uploadUrl, [UriKind]::Absolute)) {
-        Throw "Invalid upload URL: $uploadUrl"
+    Write-Host "Debug: upload URL = $uploadUrl"
+    try {
+        [Uri]$uriTest = $uploadUrl
+    } catch {
+        Throw "Computed upload URL is invalid: $uploadUrl"
     }
+    # Construct final upload URI
     $fileName  = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
     $uploadUri = "$uploadUrl?name=$fileName"
+    Write-Host "Debug: full upload URI = $uploadUri"
     # Upload asset
-    Invoke-RestMethod -Method Post -Uri $uploadUri -Headers $headers -InFile $filePath -ErrorAction Stop
+    try {
+        Invoke-RestMethod -Method Post -Uri $uploadUri -Headers $headers -InFile $filePath -ErrorAction Stop
+    } catch {
+        Throw "Failed to upload asset to GitHub: $($_.Exception.Message)"
+    }
 }
 
 # Main logic
@@ -88,7 +97,7 @@ try {
     Write-Error "ERROR: $_"
     exit 1
 } finally {
-    # Cleanup
+    # Cleanup temporary container
     if (docker ps -a --format '{{.Names}}' | Select-String -Pattern "^$container$") {
         Write-Host "Removing container '$container'..."
         docker rm $container | Out-Null
