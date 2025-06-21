@@ -1,6 +1,8 @@
+version: '3.8'
+
 services:
   xve-distro:
     build:
-      context: .
-      dockerfile: Dockerfile
-    image: xve-distro
+      context: ./build
+      dockerfile: Dockerfile.runtime
+    image: xve-distro:latest
