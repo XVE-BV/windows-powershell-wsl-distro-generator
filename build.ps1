@@ -22,8 +22,9 @@ $outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
 # Set this to the owner/repo of your artifacts repository (e.g. 'myuser/my-artifacts-repo')
 $ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
-# Expect a Personal Access Token in env var GITHUB_TOKEN
-$pat        = $Env:GITHUB_TOKEN
+# Retrieve a GitHub Personal Access Token (PAT). It can be set as a Windows user env var or in this session.
+$pat = if ($Env:GITHUB_TOKEN) { $Env:GITHUB_TOKEN } else { [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User') }
+
 
 try {
     # 1) Build the image via Buildx Bake
@@ -62,21 +63,24 @@ try {
         try {
             $release = Invoke-RestMethod -Method Post -Uri $apiUrl -Headers $headers -Body (@{ tag_name = $versionTag; name = "XVE Distro $versionTag"; prerelease = $true } | ConvertTo-Json)
         } catch {
-            # If release already exists (HTTP 422 or 404), fetch it
+            # Handle empty repository error
+            $errorContent = $_.Exception.Response.Content | ConvertFrom-Json -ErrorAction SilentlyContinue
+            if ($errorContent.message -eq 'Repository is empty.') {
+                Write-Error "Cannot create release in an empty repository '$ghRepo'. Please push an initial commit (e.g., a README.md) and try again."
+                return
+            }
+            # If release already exists (HTTP 422 or other), fetch it
             $release = Invoke-RestMethod -Method Get -Uri "$apiUrl/tags/$versionTag" -Headers $headers
         }
         # Determine upload URL template and strip placeholders
-        $uploadUrl = ($release.upload_url -split '\{')[0]
-        # Upload the tarball as a release asset
-        Invoke-RestMethod -Method Post -Uri "$uploadUrl?name=$(Split-Path $outputTar -Leaf)" -Headers $headers -InFile $outputTar
-    } else {
-        Write-Warning "Neither 'gh' CLI found nor GITHUB_TOKEN set. Skipping upload."
-    }
-} finally {
-    # Cleanup temporary container
-    if (docker ps -a --format '{{.Names}}' | Select-String -Pattern "^$container$") {
-        Write-Host "Removing container '$container'..."
-        docker rm $container | Out-Null
-    }
-    Write-Host "`nDone!" -ForegroundColor Green
+$uploadUrl = ($release.upload_url -split '\{')[0]
+# Validate URL
+if (-not [Uri]::IsWellFormedUriString($uploadUrl, [UriKind]::Absolute)) {
+    Write-Error "Invalid upload URL: $uploadUrl"
+    return
 }
+# Escape file name for query parameter
+$fileName = [Uri]::EscapeDataString((Split-Path $outputTar -Leaf))
+$uploadUri = "$uploadUrl?name=$fileName"
+# Upload the tarball as a release asset
+Invoke-RestMethod -Method Post -Uri $uploadUri -Headers $headers -InFile $outputTar
