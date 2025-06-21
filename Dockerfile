@@ -51,12 +51,16 @@ LABEL maintainer="XVE Development Distribution"
 
 ARG APP_ID=1000
 
+# Copy Composer binary from builder
+COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+
 # Copy compiled PHP extensions and configurations
 COPY --from=builder /usr/local/lib/php/extensions /usr/local/lib/php/extensions
 COPY --from=builder /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
 
 # Copy global Composer packages (including Laravel installer)
 COPY --from=vendor /composer /composer
+# Ensure global composer bin is in PATH
 ENV PATH="/composer/vendor/bin:$PATH"
 
 # Install runtime-only packages and tools
