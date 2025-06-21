@@ -61,13 +61,20 @@ try {
     } elseif ($pat) {
         # Fallback to REST API using Personal Access Token
         Write-Host "Using REST API with PAT to upload asset..."
-        # Create release
+        # Prepare GitHub API headers including User-Agent
         $apiUrl = "https://api.github.com/repos/$ghRepo/releases"
-        $releaseData = @{ tag_name = $versionTag; name = "XVE Distro $versionTag"; prerelease = $true } | ConvertTo-Json
-        $release = Invoke-RestMethod -Method Post -Uri $apiUrl -Headers @{ Authorization = "token $pat"; Accept = 'application/vnd.github.v3+json' } -Body $releaseData
-        # Upload asset
-        $uploadUrl = $release.upload_url -replace '\{.*\}$',''
-        Invoke-RestMethod -Method Post -Uri "$uploadUrl?name=$(Split-Path $outputTar -Leaf)" -Headers @{ Authorization = "token $pat"; "Content-Type" = 'application/octet-stream' } -InFile $outputTar
+        $headers = @{ Authorization = "token $pat"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'XVE-Export-Script' }
+        # Create or get existing release by tag
+        try {
+            $release = Invoke-RestMethod -Method Post -Uri $apiUrl -Headers $headers -Body (@{ tag_name = $versionTag; name = "XVE Distro $versionTag"; prerelease = $true } | ConvertTo-Json)
+        } catch {
+            # If release already exists (HTTP 422 or 404), fetch it
+            $release = Invoke-RestMethod -Method Get -Uri "$apiUrl/tags/$versionTag" -Headers $headers
+        }
+        # Determine upload URL template and strip placeholders
+        $uploadUrl = ($release.upload_url -split '\{')[0]
+        # Upload the tarball as a release asset
+        Invoke-RestMethod -Method Post -Uri "$uploadUrl?name=$(Split-Path $outputTar -Leaf)" -Headers $headers -InFile $outputTar
     } else {
         Write-Warning "Neither 'gh' CLI found nor GITHUB_TOKEN set. Skipping upload."
     }
