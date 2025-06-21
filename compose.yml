@@ -1,0 +1,6 @@
+services:
+  xve-distro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xve-distro
