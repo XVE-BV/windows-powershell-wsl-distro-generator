@@ -1,3 +1,7 @@
+<a href="https://github.com/users/jonasvanderhaegen-xve/projects/1">View Project kanban board</a>
+
+---
+
 # windows11 Powershell WSL2 Distro Generator
 
 A PowerShell script to **build** and **export** a ready-to-import WSL2 distribution tarball using Docker Desktop on Windows.
