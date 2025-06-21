@@ -20,7 +20,7 @@ $outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
 
 # GitHub settings
 # Set this to the owner/repo of your artifacts repository (e.g. 'myuser/my-artifacts-repo')
-$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'
+$ghRepo     = 'your-org/xve-artifacts'
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
 # Retrieve a GitHub Personal Access Token (PAT). It can be set as a Windows user env var or in this session.
 $pat = if ($Env:GITHUB_TOKEN) { $Env:GITHUB_TOKEN } else { [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User') }
@@ -84,3 +84,13 @@ $fileName = [Uri]::EscapeDataString((Split-Path $outputTar -Leaf))
 $uploadUri = "$uploadUrl?name=$fileName"
 # Upload the tarball as a release asset
 Invoke-RestMethod -Method Post -Uri $uploadUri -Headers $headers -InFile $outputTar
+        } # end REST API fallback
+    } # end upload decision (gh vs PAT)
+} finally {
+    # 5) Cleanup temporary container
+    if (docker ps -a --format '{{.Names}}' | Select-String -Pattern "^$container$") {
+        Write-Host "Removing container '$container'..."
+        docker rm $container | Out-Null
+    }
+    Write-Host "`nDone!" -ForegroundColor Green
+}
