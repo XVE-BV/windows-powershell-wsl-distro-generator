@@ -75,7 +75,7 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 # Copy application code and auxiliary files
 COPY . /var/www/html
 COPY scripts/show-xve-logo.sh /usr/local/bin/show-xve-logo
-COPY nginx.wsl.conf      /etc/nginx/nginx.conf
+COPY conf/nginx.wsl.conf      /etc/nginx/nginx.conf
 COPY compose.yml         /var/www/html/compose.yml
 
 # Set permissions and switch to non-root user
