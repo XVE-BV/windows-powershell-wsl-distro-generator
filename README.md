@@ -69,7 +69,7 @@ This will produce **`xve-distro.tar`** in the repository root.
 
 # Background
 
-This tool was conceived spontaneously while I was doing groceries. I had just been asked whether I wanted a Windows laptop before my first workday, and chose Windows because it was more commonly used in our team. After 8 years on macOS, I opted for Windows so I could better troubleshoot colleagues’ software and hardware issues. Knowing I’d inevitably encounter challenges myself, I saw an opportunity to learn, optimize, and build a more pragmatic development environment.
+This tool was conceived spontaneously while I was doing groceries. I was asked whether I wanted a Windows laptop before my first workday, and chose Windows because it was more commonly used in our team. After 8 years on macOS, I opted for Windows so I could better troubleshoot colleagues’ software and hardware issues. Knowing I’d inevitably encounter challenges myself, I saw an opportunity to learn, optimize, and build a more pragmatic development environment for the whole team.
 
 After experimenting with multiple AI assistants and numerous iterations, it evolved into a stable, PHP full‑stack developer environment generator. 
 
