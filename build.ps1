@@ -46,6 +46,31 @@ function Upload-ReleaseAsset {
     $apiBaseUrl = 'https://api.github.com'
     $headers = @{ Authorization = "token $pat"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'XVE-Export-Script' }
 
+    # 1) Try to GET existing release by tag
+    $tagUrl = "$apiBaseUrl/repos/$repo/releases/tags/$tag"
+    try {
+        $release = Invoke-RestMethod -Method Get -Uri $tagUrl -Headers $headers -ErrorAction Stop
+        Write-Host "Found existing release for tag '$tag' (id: $($release.id))."
+    } catch {
+        Write-Host "No existing release for tag '$tag', creating new one..."
+        $createUrl = "$apiBaseUrl/repos/$repo/releases"
+        $body = @{ tag_name = $tag; name = "XVE Distro $tag"; prerelease = $true } | ConvertTo-Json
+        $release = Invoke-RestMethod -Method Post -Uri $createUrl -Headers $headers -Body $body -ErrorAction Stop
+        Write-Host "Created release (id: $($release.id))."
+    }
+
+    # 2) Upload asset
+    $assetName = [System.Uri]::EscapeDataString((Split-Path $filePath -Leaf))
+    $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=$assetName"
+    Write-Host "Uploading asset to $uploadUrl"
+    Invoke-RestMethod -Method Post `
+        -Uri $uploadUrl `
+        -Headers @{ Authorization = "token $pat"; 'Content-Type' = 'application/octet-stream'; 'User-Agent' = 'XVE-Export-Script' } `
+        -InFile $filePath `
+        -ErrorAction Stop
+    Write-Host 'Upload complete.'
+}
+
     # Create or get release
     $createUrl = "$apiBaseUrl/repos/$repo/releases"
     $body = @{ tag_name = $tag; name = "XVE Distro $tag"; prerelease = $true } | ConvertTo-Json
