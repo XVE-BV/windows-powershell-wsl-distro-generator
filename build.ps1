@@ -19,14 +19,8 @@ $container   = 'xve-builder'
 $outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
 
 # GitHub settings
-# GitHub settings
-# A GitHub Personal Access Token (PAT) with 'repo' scope is required if the 'gh' CLI is unavailable.
-# To create one:
-# 1. On GitHub, go to https://github.com/settings/tokens and generate a new classic token with 'repo' scope.
-# 2. On Windows (PowerShell), set it as a user environment variable:
-#      [Environment]::SetEnvironmentVariable('GITHUB_TOKEN','<your_token_here>','User')
-#    Restart your PowerShell session so that $Env:GITHUB_TOKEN is available to this script.
-$ghRepo     = 'your-org/xve-artifacts'
+# Set this to the owner/repo of your artifacts repository (e.g. 'myuser/my-artifacts-repo')
+$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
 # Expect a Personal Access Token in env var GITHUB_TOKEN
 $pat        = $Env:GITHUB_TOKEN
