@@ -20,7 +20,7 @@ $container   = 'xve-builder'
 $outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
 
 # GitHub repo settings (owner/repo)
-$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'  # replace
+$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'  # replace with your own
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
 
 # Retrieve GitHub PAT: first check environment, then Windows user vars
@@ -37,27 +37,28 @@ function Upload-ReleaseAsset {
         [string]$filePath
     )
     # Headers for GitHub API
-    $apiBaseUrl = "https://api.github.com"
+    $apiBaseUrl = 'https://api.github.com'
     $headers = @{ Authorization = "token $pat"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'XVE-Export-Script' }
 
-    # 1) Create release
+    # 1) Create or get release
     $createUrl = "$apiBaseUrl/repos/$repo/releases"
     $body = @{ tag_name = $tag; name = "XVE Distro $tag"; prerelease = $true } | ConvertTo-Json
     try {
         $release = Invoke-RestMethod -Method Post -Uri $createUrl -Headers $headers -Body $body -ErrorAction Stop
     } catch {
-        # If release exists or repo empty, fetch existing
+        # If exists or repo empty, fetch existing
         $existingUrl = "$apiBaseUrl/repos/$repo/releases/tags/$tag"
         $release = Invoke-RestMethod -Method Get -Uri $existingUrl -Headers $headers -ErrorAction Stop
     }
 
-        # 2) Upload asset using uploads.github.com domain
-    # Use release ID to construct asset upload URL
-    $uploadDomain = "https://uploads.github.com"
-    $assetName = [System.Uri]::EscapeDataString((Split-Path $filePath -Leaf))
-    $uploadUrl = "$uploadDomain/repos/$repo/releases/$($release.id)/assets?name=$assetName"
-    # Perform upload
-    Invoke-RestMethod -Method Post -Uri $uploadUrl -Headers @{ Authorization = "token $pat"; 'Content-Type'='application/octet-stream'; 'User-Agent'='XVE-Export-Script' } -InFile $filePath -ErrorAction Stop -Method Post -Uri $uploadUri -Headers @{ Authorization = "token $pat"; 'Content-Type'='application/octet-stream'; 'User-Agent'='XVE-Export-Script' } -InFile $filePath -ErrorAction Stop
+    # 2) Upload asset
+    $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=$(Split-Path $filePath -Leaf)"
+
+    Invoke-RestMethod -Method Post `
+        -Uri $uploadUrl `
+        -Headers @{ Authorization = "token $pat"; 'Content-Type' = 'application/octet-stream'; 'User-Agent' = 'XVE-Export-Script' } `
+        -InFile $filePath `
+        -ErrorAction Stop
 }
 
 # 2) Main steps
@@ -81,15 +82,7 @@ try {
     # Upload if PAT present
     if ($pat) {
         Write-Host "Uploading '$outputTar' to GitHub release '$versionTag'..."
-
-        Invoke-RestMethod `
-          -Method Post `
-          -Uri $uploadUrl `
-          -Headers @{ Authorization = "token $pat" } `
-          -InFile $filePath `
-          -ContentType 'application/octet-stream' `
-          -ErrorAction Stop
-
+        Upload-ReleaseAsset -repo $ghRepo -tag $versionTag -filePath $outputTar
     } else {
         Write-Warning "GITHUB_TOKEN not set; skipping upload."
     }
