@@ -4,7 +4,7 @@ A PowerShell script to **build** and **export** a ready-to-import WSL2 distribut
 
 ## Motivation
 
-While Docker is powerful for containerized development, it can add complexity and overhead. By building a complete WSL2 distro—with all your preferred tools and configurations—once and exporting it as a tarball, you:
+While Docker is powerful for containerized development, it can add complexity and overhead. By building a complete WSL2 distro with all your preferred tools and configurations once and exporting it as a tarball, you:
 
 - Eliminate container runtime overhead: The distribution runs natively under WSL2, with no additional daemon or networking layers.
 - Customize optimally: Install exactly the PHP versions, Composer, Nginx, Node.js, and more, tailored to your workflow.
