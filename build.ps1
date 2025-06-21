@@ -11,15 +11,8 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # Config: locate compose.yml one level up if not in build/
-$rootCompose = Join-Path $scriptDir '..\compose.yml'
-$buildCompose = Join-Path $scriptDir 'compose.yml'
-if (Test-Path $buildCompose) {
-    $composeFile = $buildCompose
-} elseif (Test-Path $rootCompose) {
-    $composeFile = $rootCompose
-} else {
-    Throw "Cannot find compose.yml in build/ or project root"
-}
+$composeFile = Join-Path $scriptDir 'compose.yml'
+
 $serviceName = 'xve-distro'
 $imageName   = 'xve-distro'
 $container   = 'xve-builder'
