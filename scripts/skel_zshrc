@@ -1,3 +1,5 @@
+#!/bin/zsh
+
 # /etc/skel/.zshrc
 
 # Show XVE logo on login
@@ -20,10 +22,10 @@ export EDITOR="$VISUAL"
 
 # Laravel Sail function and shortcuts
 sail() {
-  if [ -f ./vendor/bin/sail ]; then
+  if [[ -f ./vendor/bin/sail ]]; then
     zsh ./vendor/bin/sail "$@"
   else
-    echo "❌ vendor/bin/sail not found"
+    echo "vendor/bin/sail not found"
   fi
 }
 alias s='sail '
@@ -39,5 +41,6 @@ alias sdown='s stop'
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
+
 source /opt/powerlevel10k/powerlevel10k.zsh-theme
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
