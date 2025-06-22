@@ -1,80 +1,89 @@
-<a href="https://github.com/users/jonasvanderhaegen-xve/projects/1">View Project kanban board</a>
+<a href="https://github.com/users/jonasvanderhaegen-xve/projects/1">View Project Kanban Board</a>
 
 ---
 
-# windows11 Powershell WSL2 Distro Generator
+# Windows 11 WSL2 Distro Generator (PowerShell + Docker)
 
-A PowerShell script to **build** and **export** a ready-to-import WSL2 distribution tarball using Docker Desktop on Windows.
+Automate the creation of a fully-configured WSL2 Linux environment using PowerShell and Docker Desktop. Ideal for bootstrapping a consistent, ready-to-use distro across your development team.
 
-## Motivation
+## Why This Tool Exists
 
-While Docker is powerful for containerized development, it can add complexity and overhead. By building a complete WSL2 distro with all your preferred tools and configurations once and exporting it as a tarball, you:
+Managing complex dev stacks in containers adds overhead and variability. This generator lets you:
 
-- Eliminate container runtime overhead: The distribution runs natively under WSL2, with no additional daemon or networking layers.
-- Customize optimally: Install exactly the PHP versions, Composer, Nginx, Node.js, and more, tailored to your workflow.
-- Achieve faster startup: No need to manage Docker containers; the distro boots with your Windows session.
-- Maintain consistency: Share the pre-built tarball with colleagues to ensure everyone uses the same environment.
+* **Prebuild once**: Craft a distro image with all your tools and configs baked in.
+* **Redistribute easily**: Share a single tarball; no per-project container startup.
+* **Stay in Linux**: Enjoy native WSL2 performance rather than layered container filesystems.
+* **Onboard rapidly**: New teammates import and land in the exact same environment immediately.
 
-> [!TIP]
-> For features and more information [you can find out more here](https://github.com/jonasvanderhaegen-xve/windows-powershell-wsl-distro-importer)
+---
 
-## Overview
+## Key Capabilities
 
-This repository contains a single script, **build.ps1**, which automates:
+* **Custom Base Image**: Start from Alpine Linux, trimmed to essentials.
+* **User & Permissions**: Creates a non-root user (`xve`) with passwordless sudo.
+* **Working Directory**: `/apps` folder owned by `xve` for project mounts.
+* **Shell Environment**: Zsh with preconfigured aliases and functions (e.g. Laravel Sail shortcuts).
+* **Utilities Included**: Docker CLI, optional Docker Compose, Git, `tput` (ncurses), and more.
+* **Seamless Mounts**: `wsl.conf` sets WSL automount options and default user.
 
-1. Building a customized Linux filesystem via Docker containers (with PHP, Composer, Nginx, etc.)
-2. Exporting the container’s filesystem into `xve-distro.tar`
-3. (Optional) Uploading the tarball to GitHub Releases as an asset
+---
 
-## Prerequisites
+## Getting Started
 
-* **Docker Desktop** installed with WSL2 integration enabled
-* **PowerShell** (run as Administrator)
-* **Optional**: `GITHUB_TOKEN` environment variable (for private GitHub repos)
+### Prerequisites
 
-## Usage
+* **Docker Desktop** with WSL2 integration enabled.
+* **PowerShell** (run as Administrator) on Windows 11.
+* **Optional**: `GITHUB_TOKEN` environment variable for GitHub release uploads.
 
-### Generate Tarball Only
+### Build & Export
 
 ```powershell
-# Run the build script to create the tarball
+# Clone the repo and navigate into it:
+cd path\to\repo
+
+# Build and export the WSL2 distro tarball:
 .\build.ps1
 ```
 
-This will produce **`xve-distro.tar`** in the repository root.
+* Generates `xve-distro.tar` in the project root.
 
-### Generate and Upload to GitHub
+### Upload to GitHub (Optional)
 
 ```powershell
-# Include -Upload to push the tarball to your GitHub repo
 .\build.ps1 -Upload
 ```
 
-* Requires `GITHUB_TOKEN` with **repo** scope set in your environment.
-* Uploads `xve-distro.tar` to the configured GitHub repository’s Releases.
+* Uploads the tarball to your GitHub Releases as the latest published asset.
+* Requires `GITHUB_TOKEN` with `repo` scope.
 
-## Parameters
+### Import & Launch
 
-| Parameter | Type     | Description                                                   |
-| --------- | -------- | ------------------------------------------------------------- |
-| `-Upload` | `switch` | When specified, also uploads the generated tarball to GitHub. |
+[Check other repository for this](https://github.com/jonasvanderhaegen-xve/windows-powershell-wsl-distro-importer)
 
-## Output
-
-* **`xve-distro.tar`**: A portable WSL2 distro archive ready for import with `wsl --import`.
-
-## Troubleshooting
-
-* **Docker errors**: Ensure Docker Desktop is running and the WSL2 backend is enabled.
-* **Permission issues**: Run PowerShell as Administrator.
-* **Upload failures**: Verify `GITHUB_TOKEN` is correctly set and has the appropriate scopes.
+You will log in as user `xve` into `/apps`, ready to mount projects and run Docker/Sail commands.
 
 ---
 
-# Background
+## How It Works (Under the Hood)
 
-This tool was conceived spontaneously while I was doing groceries. I was asked whether I wanted a Windows laptop before my first workday, and chose Windows because it was more commonly used in our team. After 8 years on macOS, I opted for Windows so I could better troubleshoot colleagues’ software and hardware issues. Knowing I’d inevitably encounter challenges myself, I saw an opportunity to learn, optimize, and build a more pragmatic development environment for the whole team.
+1. **Docker Buildx Bake**: Uses `compose.yml` to define build stages for your custom Alpine image.
+2. **Temporary Container**: Spins up a container and then exports its filesystem.
+4. **Persistent Configs**: `wsl.conf` and skeleton dotfiles ensure the user, mounts, and shell are set.
 
-After experimenting with multiple AI assistants and numerous iterations, it evolved into a stable, PHP full‑stack developer environment generator. 
+---
 
-In the future, support for additional programming languages and toolchains can be added as needed.
+## Troubleshooting
+
+* **Permission denied errors**: Run PowerShell as Admin and confirm drive mount `metadata` is active in `wsl.conf`.
+* **Upload failures**: Verify your `GITHUB_TOKEN` and repo settings.
+
+---
+
+## Contributing
+
+Feedback, bug reports, and pull requests are welcome. Future enhancements might include additional language runtimes, GUI tool integrations, or preinstalled frameworks.
+
+---
+
+*Generated and maintained by XVE DevOps Team*
