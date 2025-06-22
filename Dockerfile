@@ -5,6 +5,7 @@ LABEL maintainer="jonas@xve.be"
 # 1) Install prerequisites
 RUN apk update \
  && apk add --no-cache \
+      bash \
       shadow \
       sudo \
       openrc \
