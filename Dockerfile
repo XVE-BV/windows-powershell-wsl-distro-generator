@@ -24,8 +24,9 @@ RUN apk update && apk add --no-cache \
 
 # 2a) Download the Docker credential helper (secretservice)
 ARG HELPER_VER=v0.7.0
-RUN wget -qO /usr/local/bin/docker-credential-secretservice \
+RUN curl -fsSL \
       https://github.com/docker/docker-credential-helpers/releases/download/${HELPER_VER}/docker-credential-secretservice-linux-amd64 \
+      -o /usr/local/bin/docker-credential-secretservice \
  && chmod +x /usr/local/bin/docker-credential-secretservice
 
 # 3) Clone Powerlevel10k
