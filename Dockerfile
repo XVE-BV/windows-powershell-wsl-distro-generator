@@ -1,3 +1,30 @@
+# Multi-stage Dockerfile: Build GitFourchette in Ubuntu, then copy to Alpine
+
+# ---------------------
+# Stage 1: Builder (Ubuntu)
+# ---------------------
+FROM ubuntu:24.04 AS builder
+
+ARG USER_NAME=xve
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Install Python and build deps
+RUN apt update && apt install -y --no-install-recommends \
+      python3 python3-pip python3-venv python3-dev build-essential git qt6-svg-dev libqt6svg6 \
+      libpython3-dev libgit2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a venv for GitFourchette
+WORKDIR /opt/gitfourchette
+RUN python3 -m venv .venv \
+ && . .venv/bin/activate \
+ && pip install --upgrade pip setuptools wheel \
+ && pip install gitfourchette
+
+# ---------------------
+# Stage 2: Runtime (Alpine)
+# ---------------------
 FROM alpine:latest
 LABEL maintainer="jonas@xve.be"
 
@@ -9,13 +36,9 @@ ARG USER_GID=1000
 RUN apk update && apk add --no-cache \
       zsh shadow sudo git docker-cli bash \
       ncurses ncurses-terminfo dos2unix socat wget curl \
-      python3 py3-pip python3-dev py3-setuptools python3-virtualenv python3-dev py3-setuptools \
-      # GitFourchette Python deps
-      py3-pygit2 py3-pygments \
-      # Qt6 SVG support
-      qt6-qtbase-dev qt6-qtsvg-dev qt6-qtsvg \
-      # build tools for any native modules
-      build-base \
+      python3 py3-pip libstdc++ libgcc \
+      # Qt6 runtime support
+      qt6-qtsvg \
     && rm -rf /var/cache/apk/*
 
 # 2) Clone Powerlevel10k prompt
@@ -41,15 +64,20 @@ RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
 COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
 COPY wsl.conf /etc/wsl.conf
 
-# 6) Install GitFourchette system-wide with override and set update alias
-USER root
-RUN pip3 install --upgrade pip setuptools wheel gitfourchette --break-system-packages \
- && echo "# alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
- && echo "alias gf-update='pip3 install --upgrade gitfourchette --break-system-packages'" >> /home/${USER_NAME}/.zshrc
+# 6) Copy GitFourchette venv from builder
+COPY --from=builder /opt/gitfourchette/.venv /home/${USER_NAME}/.venv
 
-# 7) Final ownership fix
+# 7) Setup environment and alias
+USER ${USER_NAME}
+ENV PATH="/home/${USER_NAME}/.venv/bin:$PATH"
+RUN echo "# GitFourchette venv activation" >> /home/${USER_NAME}/.zshrc \
+ && echo "source ~/\.venv/bin/activate" >> /home/${USER_NAME}/.zshrc \
+ && echo "# alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
+ && echo "alias gf-update=' \"~/\.venv/bin/pip\" install --upgrade gitfourchette'" >> /home/${USER_NAME}/.zshrc
+
+# 8) Final ownership fix
 USER root
 RUN chown -R ${USER_UID}:${USER_GID} /opt/powerlevel10k /apps /home/${USER_NAME}
 
-# 8) Default command
+# 9) Default command
 CMD ["/sbin/init"]
