@@ -19,6 +19,7 @@ RUN apk update && apk add --no-cache \
       socat \
       wget \
       ca-certificates \
+      && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
 # 2a) Download the Docker credential helper (secretservice)
