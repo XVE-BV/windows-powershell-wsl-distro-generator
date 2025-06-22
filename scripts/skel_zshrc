@@ -57,15 +57,36 @@ source /opt/powerlevel10k/powerlevel10k.zsh-theme
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # 1) Auto-symlink Windows SSH folder if none exists
-if [[ -o interactive && ! -e $HOME/.ssh ]]; then
-  # Look for a Windows .ssh folder under any /mnt/*/Users/*/.ssh
-  win_ssh=$(find /mnt -maxdepth 3 -type d -path '*/Users/*/.ssh' 2>/dev/null | head -n1)
+if [[ -o interactive ]]; then
 
-  if [[ -n $win_ssh ]]; then
-    echo "🔗 Linking WSL ~/.ssh → $win_ssh"
-    ln -s "$win_ssh" "$HOME/.ssh"
+  win_ssh=$(find /c/Users -maxdepth 3 -type d -path '*/Users/*/.ssh' 2>/dev/null | head -n1)
+
+   DST="$HOME/.ssh"
+
+    if [[ -n $win_ssh ]]; then
+
+    mkdir -p "$DST"
+
+    for src in "$win_ssh"/*; do
+
+      name=${src##*/}
+      link="$DST/$name"
+	
+	if [[ ! -f $link ]]; then
+
+		ln -sfnT "$src" "$link"
+      		echo "🔗 symlinking $src to $link"
+      		chmod 600 "$link"
+	fi
+	
+    done
+
+    chmod 700 "$DST"
+
+    #ssh -T git@github.com
+
   else
-    echo "⚠️  No Windows SSH folder found under /mnt/*/Users/*/.ssh"
+    echo "⚠️  No Windows SSH folder found under /c/*/Users/*/.ssh"
   fi
 fi
 
