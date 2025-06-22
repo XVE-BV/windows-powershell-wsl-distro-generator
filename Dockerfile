@@ -27,10 +27,13 @@ RUN mkdir -p /apps \
  && chown ${USER_UID}:${USER_GID} /apps \
  && chmod 755 /apps
 
-# 4) Populate /etc/skel/.zshrc and fix CRLF → LF
+# 4) Populate both /etc/skel and the actual home with .zshrc, fixing CRLF → LF
 COPY scripts/skel_zshrc /etc/skel/.zshrc
 RUN dos2unix /etc/skel/.zshrc \
  && chmod 644 /etc/skel/.zshrc
+
+# Ensure the skeleton is copied into the new user's home
+RUN install -o ${USER_NAME} -g ${USER_NAME} -m 644 /etc/skel/.zshrc /home/${USER_NAME}/.zshrc
 
 # 5) Copy in WSL config (automount & default user)
 COPY wsl.conf /etc/wsl.conf
