@@ -8,13 +8,17 @@ cd /apps
 fi
 
 # Show XVE logo on login
-echo "${GREEN}____  _______   _______________${RESET}"
-echo "${GREEN}\   \/  /\   \ /   /\_   _____/${RESET}"
-echo "${GREEN} \     /  \   Y   /  |    __)_ ${RESET}"
-echo "${GREEN} /     \   \     /   |        \\\\${RESET}"
-echo "${GREEN}/___/\  \   \___/   /_______  /${RESET}"
-echo "${GREEN}      \_/                   \/ ${RESET}"
-echo ""
+autoload -U colors && colors
+
+# Show XVE logo in green
+print -P "%F{green}____  _______   _______________%f"
+print -P "%F{green}\\   \\/  /\\   \\ /   /\\_   _____/%f"
+print -P "%F{green} \\     /  \\   Y   /  |    __)_ %f"
+print -P "%F{green} /     \\   \\     /   |        \\\\%f"
+print -P "%F{green}/___/\\  \\   \\___/   /_______  /%f"
+print -P "%F{green}      \\_/                   \\/ %f"
+echo
+
 
 # Jump straight into /apps on interactive shells
 if [[ -o interactive && $(id -u) -ne 0 ]]; then

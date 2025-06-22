@@ -1,22 +1,13 @@
 FROM alpine:latest
 LABEL maintainer="jonas@xve.be"
 
-# 1) Install prerequisites (zsh, git, sudo, docker-cli, ncurses, dos2unix)
+# 1) Install prerequisites (including dos2unix)
 RUN apk update && apk add --no-cache \
-      zsh \
-      shadow \
-      sudo \
-      git \
-      docker-cli \
-      ncurses \
-      ncurses-terminfo \
-      dos2unix \
+      zsh shadow sudo git docker-cli \
+      ncurses ncurses-terminfo dos2unix \
     && rm -rf /var/cache/apk/*
 
-# 2) Install Powerlevel10k theme globally
-RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /opt/powerlevel10k
-
-# 3) Create the non-root user at build time
+# 2) Create user
 ARG USER_NAME=xve
 ARG USER_UID=1000
 ARG USER_GID=1000
@@ -25,23 +16,28 @@ RUN addgroup -g "${USER_GID}" "${USER_NAME}" \
  && echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
  && addgroup "${USER_NAME}" wheel
 
-# 4) Prepare /apps as the working directory
+# 3) Prepare /apps
 RUN mkdir -p /apps \
- && chown ${USER_UID}:${USER_GID} /apps \
- && chmod 755 /apps
+ && chown ${USER_UID}:${USER_GID} /apps
 
-# 5) Populate both /etc/skel and the actual home with .zshrc, fixing CRLF → LF
+# 4) Copy and normalize skeleton .zshrc
 COPY scripts/skel_zshrc /etc/skel/.zshrc
 RUN dos2unix /etc/skel/.zshrc \
  && chmod 644 /etc/skel/.zshrc
-RUN install -o ${USER_NAME} -g ${USER_NAME} -m 644 /etc/skel/.zshrc /home/${USER_NAME}/.zshrc
 
-# 6) Copy in custom Powerlevel10k configuration
+# 5) Copy your custom p10k.zsh into /etc/skel and normalize
 COPY scripts/p10k.zsh /etc/skel/.p10k.zsh
-RUN install -o ${USER_NAME} -g ${USER_NAME} -m 644 /etc/skel/.p10k.zsh /home/${USER_NAME}/.p10k.zsh
+RUN dos2unix /etc/skel/.p10k.zsh \
+ && chmod 644 /etc/skel/.p10k.zsh
 
-# 7) Copy in WSL config (automount & default user)
+# (Optional) Ensure the home dir gets these files
+#    Only needed if the home was mkdir’d earlier; otherwise /etc/skel will apply automatically.
+RUN cp /etc/skel/.zshrc /home/${USER_NAME}/.zshrc \
+ && cp /etc/skel/.p10k.zsh /home/${USER_NAME}/.p10k.zsh \
+ && chown ${USER_UID}:${USER_GID} /home/${USER_NAME}/.zshrc /home/${USER_NAME}/.p10k.zsh
+
+# 6) WSL config
 COPY wsl.conf /etc/wsl.conf
 
-# 7) Launch OpenRC’s init so that services and chsh work
+# 7) Boot init
 CMD ["/sbin/init"]
