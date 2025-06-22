@@ -7,6 +7,7 @@ ARG USER_UID=1000
 ARG USER_GID=1000
 
 COPY scripts/apk_repositories /etc/apk/repositories
+RUN dos2unix /etc/apk/repositories
 
 # 2) Install prerequisites (including socat)
 RUN apk update && apk add --no-cache \
