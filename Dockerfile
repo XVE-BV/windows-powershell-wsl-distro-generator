@@ -11,9 +11,9 @@ RUN apk update && apk add --no-cache \
       ncurses ncurses-terminfo dos2unix socat wget curl \
       python3 py3-pip python3-dev py3-setuptools \
       # GitFourchette Python deps
-      py3-pygit2 py3-pygments py3-pyqt6 \
+      py3-pygit2 py3-pygments \
       # Qt6 SVG support
-      qt6-qtsvg \
+      qt6-qtbase-dev qt6-qtsvg-dev qt6-qtsvg \
       # build tools for any native modules
       build-base \
     && rm -rf /var/cache/apk/*
@@ -42,7 +42,7 @@ RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
 # 6) Install GitFourchette and set update alias
 USER ${USER_NAME}
 ENV PATH="/home/${USER_NAME}/.local/bin:$PATH"
-RUN pip3 install --user gitfourchette \
+RUN pip3 install --user gitfourchette PyQt6 \
  && echo "# alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
  && echo "alias gf-update='pip3 install --user --upgrade gitfourchette'" >> /home/${USER_NAME}/.zshrc
 
