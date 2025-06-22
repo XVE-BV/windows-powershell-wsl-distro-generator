@@ -54,3 +54,14 @@ fi
 
 source /opt/powerlevel10k/powerlevel10k.zsh-theme
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# If no agent socket, start one and load keys
+if [[ -o interactive && -z "$SSH_AUTH_SOCK" ]]; then
+  eval "$(ssh-agent -s)" >/dev/null
+  # Add all private keys in ~/.ssh
+  for key in ~/.ssh/id_*; do
+    # skip .pub files
+    [[ "$key" = *.pub ]] && continue
+    ssh-add "$key" >/dev/null 2>&1
+  done
+fi
