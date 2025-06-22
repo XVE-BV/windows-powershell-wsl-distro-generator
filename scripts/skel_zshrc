@@ -57,17 +57,14 @@ source /opt/powerlevel10k/powerlevel10k.zsh-theme
 
 # 1) Auto-symlink Windows SSH folder if none exists
 if [[ -o interactive && ! -e $HOME/.ssh ]]; then
-  # 1) Ask Windows what %USERPROFILE% is, strip CR/LF
-  winprof=$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')
-  # 2) Convert to a WSL path
-  wslwin=$(wslpath "$winprof" 2>/dev/null)
-  win_ssh="$wslwin/.ssh"
+  # Look for a Windows .ssh folder under any /mnt/*/Users/*/.ssh
+  win_ssh=$(find /mnt -maxdepth 3 -type d -path '*/Users/*/.ssh' 2>/dev/null | head -n1)
 
-  if [[ -d $win_ssh ]]; then
+  if [[ -n $win_ssh ]]; then
     echo "🔗 Linking WSL ~/.ssh → $win_ssh"
     ln -s "$win_ssh" "$HOME/.ssh"
   else
-    echo "⚠️  Windows SSH folder not found at $win_ssh"
+    echo "⚠️  No Windows SSH folder found under /mnt/*/Users/*/.ssh"
   fi
 fi
 
@@ -75,11 +72,8 @@ fi
 if [[ -o interactive && -z $SSH_AUTH_SOCK ]]; then
   eval "$(ssh-agent -s)" >/dev/null
 
-  # only attempt to load if there are id_* files
-  if ls "$HOME/.ssh"/id_* 1>/dev/null 2>&1; then
-    for key in "$HOME/.ssh"/id_*; do
-      [[ $key == *.pub ]] && continue
-      ssh-add "$key" >/dev/null 2>&1
-    done
-  fi
+  # Load every private key in ~/.ssh (skip *.pub)
+  for key in "$HOME/.ssh"/id_*; do
+    [[ -e $key && $key != *.pub ]] && ssh-add "$key" >/dev/null 2>&1
+  done
 fi
