@@ -18,6 +18,7 @@ RUN apk update && apk add --no-cache \
       dos2unix \
       socat \
       wget \
+      curl \
       ca-certificates \
       && update-ca-certificates \
     && rm -rf /var/cache/apk/*
