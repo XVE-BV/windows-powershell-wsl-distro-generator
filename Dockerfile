@@ -31,8 +31,6 @@ RUN groupadd --gid "${USER_GID}" "${USER_NAME}" \
  && rm -rf /var/lib/apt/lists/*
 
 # Copy your init script & wsl.conf
-COPY wsl-init.sh /usr/local/bin/wsl-init.sh
-RUN chmod 755 /usr/local/bin/wsl-init.sh
 COPY wsl.conf /etc/wsl.conf
 
 CMD ["/lib/systemd/systemd"]
