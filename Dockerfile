@@ -28,7 +28,7 @@ RUN apk update && apk add --no-cache \
 # 3) Download the Docker credential-pass helper
 ARG HELPER_VER=v0.9.3
 RUN curl -fsSL \
-      https://github.com/docker/docker-credential-helpers/releases/download/${HELPER_VER}/docker-credential-pass-${HELPER_VER}-linux-amd64 \
+      https://github.com/docker/docker-credential-helpers/releases/download/${HELPER_VER}/docker-credential-pass-${HELPER_VER}.linux-amd64 \
       -o /usr/local/bin/docker-credential-pass \
  && chmod +x /usr/local/bin/docker-credential-pass
 
