@@ -8,12 +8,12 @@ cd /apps
 fi
 
 # Show XVE logo on login
-echo "____  _______   _______________"
-echo "\   \/  /\   \ /   /\_   _____/"
-echo " \     /  \   Y   /  |    __)_ "
-echo " /     \   \     /   |        \\"
-echo "/___/\  \   \___/   /_______  /"
-echo "      \_/                   \/ "
+echo "${GREEN}____  _______   _______________${RESET}"
+echo "${GREEN}\   \/  /\   \ /   /\_   _____/${RESET}"
+echo "${GREEN} \     /  \   Y   /  |    __)_ ${RESET}"
+echo "${GREEN} /     \   \     /   |        \\\\${RESET}"
+echo "${GREEN}/___/\  \   \___/   /_______  /${RESET}"
+echo "${GREEN}      \_/                   \/ ${RESET}"
 echo ""
 
 # Jump straight into /apps on interactive shells

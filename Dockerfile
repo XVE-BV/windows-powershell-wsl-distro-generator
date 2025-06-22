@@ -36,7 +36,11 @@ RUN dos2unix /etc/skel/.zshrc \
  && chmod 644 /etc/skel/.zshrc
 RUN install -o ${USER_NAME} -g ${USER_NAME} -m 644 /etc/skel/.zshrc /home/${USER_NAME}/.zshrc
 
-# 6) Copy in WSL config (automount & default user)
+# 6) Copy in custom Powerlevel10k configuration
+COPY scripts/p10k.zsh /etc/skel/.p10k.zsh
+RUN install -o ${USER_NAME} -g ${USER_NAME} -m 644 /etc/skel/.p10k.zsh /home/${USER_NAME}/.p10k.zsh
+
+# 7) Copy in WSL config (automount & default user)
 COPY wsl.conf /etc/wsl.conf
 
 # 7) Launch OpenRC’s init so that services and chsh work
