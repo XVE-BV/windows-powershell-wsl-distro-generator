@@ -55,13 +55,28 @@ fi
 source /opt/powerlevel10k/powerlevel10k.zsh-theme
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
-# If no agent socket, start one and load keys
-if [[ -o interactive && -z "$SSH_AUTH_SOCK" ]]; then
+# 1) Auto-symlink Windows SSH folder if none exists
+if [[ -o interactive && ! -e $HOME/.ssh ]]; then
+  # Get Windows username
+  WIN_USER=$(/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '$Env:USERNAME' 2>/dev/null | tr -d '\r')
+  WIN_SSH="/mnt/c/Users/${WIN_USER}/.ssh"
+
+  if [[ -d $WIN_SSH ]]; then
+    echo "Linking ~/.ssh → $WIN_SSH"
+    ln -s "$WIN_SSH" "$HOME/.ssh"
+  else
+    echo "⚠ould not find Windows SSH folder at $WIN_SSH"
+  fi
+fi
+
+# 2) Start ssh-agent if needed and load keys
+if [[ -o interactive && -z $SSH_AUTH_SOCK ]]; then
   eval "$(ssh-agent -s)" >/dev/null
-  # Add all private keys in ~/.ssh
-  for key in ~/.ssh/id_*; do
-    # skip .pub files
-    [[ "$key" = *.pub ]] && continue
-    ssh-add "$key" >/dev/null 2>&1
-  done
+
+  if compgen -G "$HOME/.ssh/id_*" >/dev/null; then
+    for key in "$HOME/.ssh"/id_*; do
+      [[ $key = *.pub ]] && continue
+      ssh-add "$key" >/dev/null 2>&1
+    done
+  fi
 fi
