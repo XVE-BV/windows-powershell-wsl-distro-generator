@@ -31,24 +31,54 @@ if ($Upload) {
 
 function Upload-ReleaseAsset {
     param($repo, $tag, $filePath)
-    $api = 'https://api.github.com'
-    $headers = @{ Authorization = "token $pat"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'XVE-Export-Script' }
 
-    # Check or create release
+    $api     = 'https://api.github.com'
+    $headers = @{
+        Authorization = "token $pat"
+        Accept        = 'application/vnd.github+json'
+        'User-Agent'  = 'XVE-Export-Script'
+    }
+
+    # 1) Find or create the release (as draft/prerelease)
     $tagUrl = "$api/repos/$repo/releases/tags/$tag"
     try {
         $rel = Invoke-RestMethod -Method Get -Uri $tagUrl -Headers $headers -ErrorAction Stop
     } catch {
-        $body = @{ tag_name = $tag; name = "XVE Distro $tag"; prerelease = $true } | ConvertTo-Json
+        $body = @{
+            tag_name   = $tag
+            name       = "XVE Distro $tag"
+            draft      = $true
+            prerelease = $true
+        } | ConvertTo-Json
         $rel = Invoke-RestMethod -Method Post -Uri "$api/repos/$repo/releases" -Headers $headers -Body $body -ErrorAction Stop
     }
 
-    # Upload asset
-    $assetName = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
-    $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($rel.id)/assets?name=$assetName"
-    Write-Host "Uploading asset to $uploadUrl"
-    Invoke-RestMethod -Method Post -Uri $uploadUrl -Headers @{ Authorization = "token $pat"; 'Content-Type'='application/octet-stream'; 'User-Agent'='XVE-Export-Script' } -InFile $filePath -ErrorAction Stop
-    Write-Host 'Upload complete.'
+    try {
+        # 2) Upload the asset
+        $assetName = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
+        $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($rel.id)/assets?name=$assetName"
+        Invoke-RestMethod -Method Post -Uri $uploadUrl `
+                          -Headers @{
+            Authorization = "token $pat"
+            'Content-Type' = 'application/octet-stream'
+            'User-Agent'   = 'XVE-Export-Script'
+        } `
+                          -InFile $filePath -ErrorAction Stop
+
+        # 3) Publish the release
+        $patchBody = @{
+            draft      = $false
+            prerelease = $false
+        } | ConvertTo-Json
+        Invoke-RestMethod -Method Patch -Uri "$api/repos/$repo/releases/$($rel.id)" `
+                          -Headers $headers -Body $patchBody -ErrorAction Stop
+
+    } catch {
+        # 4) On failure, delete the release to avoid leftovers
+        $deleteUrl = "$api/repos/$repo/releases/$($rel.id)"
+        Invoke-RestMethod -Method Delete -Uri $deleteUrl -Headers $headers -ErrorAction SilentlyContinue
+        throw "Release upload or publish failed; release $tag has been deleted."
+    }
 }
 
 # Main
