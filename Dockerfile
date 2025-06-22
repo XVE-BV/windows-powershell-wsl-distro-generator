@@ -7,7 +7,7 @@ ARG USER_GID=1000
 
 # 1) Install core prerequisites
 RUN apk update && apk add --no-cache \
-      zsh shadow sudo git docker-cli \
+      zsh shadow sudo git docker-cli bash \
       ncurses ncurses-terminfo dos2unix socat wget curl \
     && rm -rf /var/cache/apk/*
 
