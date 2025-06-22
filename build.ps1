@@ -16,7 +16,7 @@ $composeFile = Join-Path $scriptDir 'compose.yml'
 $serviceName = 'xve-distro'
 $imageName   = 'xve-distro'
 $container   = 'xve-builder'
-$outputTar   = Join-Path $scriptDir '..\xve-distro.tar'
+$outputTar   = Join-Path $scriptDir '..\windows-powershell-wsl-distro-importer\xve-distro.tar'
 
 # GitHub settings
 $ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'  # replace
