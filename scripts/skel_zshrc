@@ -12,33 +12,6 @@ if [[ -o interactive && $(id -u) -ne 0 ]]; then
 cd /apps
 fi
 
-# On first interactive login, ensure GPG & pass are set up
-if [[ -o interactive ]]; then
-  # Only run once per user
-  SETUP_MARKER="$HOME/.gpg_pass_initialized"
-  if [ ! -f "$SETUP_MARKER" ]; then
-    # Check for any secret GPG keys
-    if ! gpg --list-secret-keys --with-colons | grep -q '^sec'; then
-      echo
-      echo "🔐 GPG key and pass store not found. Running setup..."
-      # Run the interactive setup script
-      bash ~/bin/setup-gpg-pass.sh
-    fi
-    # Mark done so we don’t prompt again
-    touch "$SETUP_MARKER"
-    echo
-  fi
-fi
-
-if [[ -o interactive && -z "$SSH_AGENT_STARTED" ]]; then
-  export SSH_AUTH_SOCK=/tmp/ssh-agent.sock
-  nohup /usr/local/bin/wsl2-ssh-agent \
-    --addr /tmp/ssh-agent.sock \
-    --pipe "$(cmd.exe /C "echo %SSH_AUTH_SOCK%" | tr -d '\r\n')" \
-    > /dev/null 2>&1 &
-  export SSH_AGENT_STARTED=1
-fi
-
 # Show XVE logo in green
 GREEN=$'\e[32m'
 RESET=$'\e[0m'
