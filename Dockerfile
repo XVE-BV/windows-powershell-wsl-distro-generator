@@ -3,7 +3,7 @@
 # ---------------------
 # Stage 1: Builder (Ubuntu)
 # ---------------------
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:22.04 AS builder
 
 ARG USER_NAME=xve
 ARG USER_UID=1000
@@ -15,12 +15,14 @@ RUN apt update && apt install -y --no-install-recommends \
       libpython3-dev libgit2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a venv for GitFourchette
+# Create a venv for GitFourchette and install
 WORKDIR /opt/gitfourchette
 RUN python3 -m venv .venv \
  && . .venv/bin/activate \
  && pip install --upgrade pip setuptools wheel \
- && pip install git+https://github.com/jorio/gitfourchette.git
+ && pip install git+https://github.com/jorio/gitfourchette.git \
+ # Verify that gitfourchette entrypoint exists
+ && ls -l .venv/bin/gitfourchette
 
 # ---------------------
 # Stage 2: Runtime (Alpine)
@@ -55,7 +57,8 @@ RUN mkdir -p /apps
 
 # 5) Install skeleton Zsh configs and Docker config directory
 USER root
-RUN mkdir -p /home/${USER_NAME}/.docker
+RUN mkdir -p /home/${USER_NAME}/.docker \
+ && chown ${USER_UID}:${USER_GID} /home/${USER_NAME}/.docker
 COPY scripts/skel_zshrc /etc/skel/.zshrc
 COPY scripts/p10k.zsh   /etc/skel/.p10k.zsh
 RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
@@ -64,16 +67,19 @@ RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
 COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
 COPY wsl.conf /etc/wsl.conf
 
-# 6) Copy GitFourchette venv from builder
+# 6) Copy GitFourchette venv from builder and fix permissions
 COPY --from=builder /opt/gitfourchette/.venv /home/${USER_NAME}/.venv
+RUN chown -R ${USER_UID}:${USER_GID} /home/${USER_NAME}
 
-# 7) Setup environment and alias
+# 7) Setup environment variables and alias
 USER ${USER_NAME}
-ENV PATH="/home/${USER_NAME}/.venv/bin:$PATH"
-RUN echo "# GitFourchette venv activation" >> /home/${USER_NAME}/.zshrc \
- && echo "source ~/\.venv/bin/activate" >> /home/${USER_NAME}/.zshrc \
- && echo "# alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
- && echo "alias gf-update=' \"~/\.venv/bin/pip\" install --upgrade gitfourchette'" >> /home/${USER_NAME}/.zshrc
+ENV VIRTUAL_ENV="/home/${USER_NAME}/.venv"
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+RUN echo "# Activate GitFourchette virtualenv" >> /home/${USER_NAME}/.zshrc \
+ && echo "export VIRTUAL_ENV=\"${VIRTUAL_ENV}\"" >> /home/${USER_NAME}/.zshrc \
+ && echo "export PATH=\"${VIRTUAL_ENV}/bin:$PATH\"" >> /home/${USER_NAME}/.zshrc \
+ && echo "# Alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
+ && echo "alias gf-update='/home/${USER_NAME}/.venv/bin/pip install --upgrade git+https://github.com/jorio/gitfourchette.git'" >> /home/${USER_NAME}/.zshrc
 
 # 8) Final ownership fix
 USER root
