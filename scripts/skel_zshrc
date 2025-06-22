@@ -30,6 +30,15 @@ if [[ -o interactive ]]; then
   fi
 fi
 
+if [[ -o interactive && -z "$SSH_AGENT_STARTED" ]]; then
+  export SSH_AUTH_SOCK=/tmp/ssh-agent.sock
+  nohup /usr/local/bin/wsl2-ssh-agent \
+    --addr /tmp/ssh-agent.sock \
+    --pipe "$(cmd.exe /C "echo %SSH_AUTH_SOCK%" | tr -d '\r\n')" \
+    > /dev/null 2>&1 &
+  export SSH_AGENT_STARTED=1
+fi
+
 # Show XVE logo in green
 GREEN=$'\e[32m'
 RESET=$'\e[0m'
