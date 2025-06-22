@@ -57,15 +57,17 @@ source /opt/powerlevel10k/powerlevel10k.zsh-theme
 
 # 1) Auto-symlink Windows SSH folder if none exists
 if [[ -o interactive && ! -e $HOME/.ssh ]]; then
-  # Get Windows username
-  WIN_USER=$(/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '$Env:USERNAME' 2>/dev/null | tr -d '\r')
-  WIN_SSH="/mnt/c/Users/${WIN_USER}/.ssh"
+  # 1) Ask Windows what %USERPROFILE% is, strip CR/LF
+  winprof=$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')
+  # 2) Convert to a WSL path
+  wslwin=$(wslpath "$winprof" 2>/dev/null)
+  win_ssh="$wslwin/.ssh"
 
-  if [[ -d $WIN_SSH ]]; then
-    echo "Linking ~/.ssh → $WIN_SSH"
-    ln -s "$WIN_SSH" "$HOME/.ssh"
+  if [[ -d $win_ssh ]]; then
+    echo "🔗 Linking WSL ~/.ssh → $win_ssh"
+    ln -s "$win_ssh" "$HOME/.ssh"
   else
-    echo "⚠ould not find Windows SSH folder at $WIN_SSH"
+    echo "⚠️  Windows SSH folder not found at $win_ssh"
   fi
 fi
 
@@ -73,9 +75,10 @@ fi
 if [[ -o interactive && -z $SSH_AUTH_SOCK ]]; then
   eval "$(ssh-agent -s)" >/dev/null
 
-  if compgen -G "$HOME/.ssh/id_*" >/dev/null; then
+  # only attempt to load if there are id_* files
+  if ls "$HOME/.ssh"/id_* 1>/dev/null 2>&1; then
     for key in "$HOME/.ssh"/id_*; do
-      [[ $key = *.pub ]] && continue
+      [[ $key == *.pub ]] && continue
       ssh-add "$key" >/dev/null 2>&1
     done
   fi
