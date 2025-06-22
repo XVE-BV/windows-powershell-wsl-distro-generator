@@ -9,7 +9,8 @@ RUN apk update \
       sudo \
       git \
       docker-cli \
-      ncurses-utils \
+      ncurses \
+      ncurses-terminfo \
  && rm -rf /var/cache/apk/*
 
 # 2) Create the non-root user at build time
