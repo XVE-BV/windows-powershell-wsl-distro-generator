@@ -9,7 +9,7 @@ ARG USER_GID=1000
 RUN apk update && apk add --no-cache \
       zsh shadow sudo git docker-cli bash \
       ncurses ncurses-terminfo dos2unix socat wget curl \
-      python3 py3-pip python3-dev py3-setuptools \
+      python3 py3-venv py3-pip python3-dev py3-setuptools \
       # GitFourchette Python deps
       py3-pygit2 py3-pygments \
       # Qt6 SVG support
@@ -30,7 +30,7 @@ RUN addgroup -g "${USER_GID}" "${USER_NAME}" \
 # 4) Prepare /apps directory
 RUN mkdir -p /apps
 
-# 5) Install skeleton Zsh configs
+# 5) Install skeleton Zsh configs and Docker config directory
 USER root
 RUN mkdir -p /home/${USER_NAME}/.docker
 COPY scripts/skel_zshrc /etc/skel/.zshrc
@@ -38,23 +38,25 @@ COPY scripts/p10k.zsh   /etc/skel/.p10k.zsh
 RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
  && cp /etc/skel/.zshrc /home/${USER_NAME}/.zshrc \
  && cp /etc/skel/.p10k.zsh /home/${USER_NAME}/.p10k.zsh
-
-# 6) Install GitFourchette and set update alias
-USER ${USER_NAME}
-ENV PATH="/home/${USER_NAME}/.local/bin:$PATH"
-RUN pip3 install --user gitfourchette PyQt6 \
- && echo "# alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
- && echo "alias gf-update='pip3 install --user --upgrade gitfourchette'" >> /home/${USER_NAME}/.zshrc
-
-# 7) Configure Docker to _not_ use a credential helper (fallback to plaintext)
-USER root
 COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
-
-# 8) Copy WSL config
 COPY wsl.conf /etc/wsl.conf
 
-# 9) Final ownership fix
+# 6) Setup Python venv, install GitFourchette, and set update alias
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
+# create a virtualenv for user packages
+RUN python3 -m venv .venv \
+ && . .venv/bin/activate \
+ && pip install --upgrade pip setuptools wheel \
+ && pip install gitfourchette \
+ && echo "# GitFourchette venv activation" >> ~/.zshrc \
+ && echo "source ~/\.venv/bin/activate" >> ~/.zshrc \
+ && echo "# alias to update GitFourchette" >> ~/.zshrc \
+ && echo "alias gf-update='pip install --upgrade gitfourchette'" >> ~/.zshrc
+
+# 7) Final ownership fix
+USER root
 RUN chown -R ${USER_UID}:${USER_GID} /opt/powerlevel10k /apps /home/${USER_NAME}
 
-# 10) Default command
+# 8) Default command
 CMD ["/sbin/init"]
