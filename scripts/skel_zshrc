@@ -7,16 +7,17 @@ if [[ -o interactive && $(id -u) -ne 0 ]]; then
 cd /apps
 fi
 
-# Show XVE logo on login
-autoload -U colors && colors
-
 # Show XVE logo in green
-print -P "%F{green}____  _______   _______________%f"
-print -P "%F{green}\\   \\/  /\\   \\ /   /\\_   _____/%f"
-print -P "%F{green} \\     /  \\   Y   /  |    __)_ %f"
-print -P "%F{green} /     \\   \\     /   |        \\\\%f"
-print -P "%F{green}/___/\\  \\   \\___/   /_______  /%f"
-print -P "%F{green}      \\_/                   \\/ %f"
+GREEN=$'\e[32m'
+RESET=$'\e[0m'
+
+# Show XVE logo in green, preserving alignment
+printf '%b\n' "${GREEN}____  _______   _______________${RESET}"
+printf '%b\n' "${GREEN}\   \/  /\   \ /   /\_   _____/${RESET}"
+printf '%b\n' "${GREEN} \     /  \   Y   /  |    __)_ ${RESET}"
+printf '%b\n' "${GREEN} /     \   \     /   |        \\\\${RESET}"
+printf '%b\n' "${GREEN}/___/\  \   \___/   /_______  /${RESET}"
+printf '%b\n' "${GREEN}      \_/                   \/ ${RESET}"
 echo
 
 
