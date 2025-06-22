@@ -13,7 +13,7 @@ ARG USER_GID=1000
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       python3 python3-pip python3-venv python3-dev build-essential git \
-      qt6-svg-dev libqt6svg6 libpython3-dev libgit2-dev \
+      python3-pyqt6 python3-pyqt6.qtsvg libpython3-dev libgit2-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a virtual environment for GitFourchette and install
