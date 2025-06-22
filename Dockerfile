@@ -9,6 +9,7 @@ ARG USER_GID=1000
 RUN apk update && apk add --no-cache \
       zsh shadow sudo git docker-cli bash \
       ncurses ncurses-terminfo dos2unix socat wget curl \
+      openssh \
     && rm -rf /var/cache/apk/*
 
 # 2) (Optional) Clone Powerlevel10k prompt
