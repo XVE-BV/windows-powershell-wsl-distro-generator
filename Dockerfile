@@ -6,7 +6,7 @@ ARG USER_NAME=xve
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-# 2) Install prerequisites (including socat, wget)
+# 2) Install core prerequisites (incl. socat, curl, pass, gpg, CA certs)
 RUN apk update && apk add --no-cache \
       zsh \
       shadow \
@@ -19,54 +19,58 @@ RUN apk update && apk add --no-cache \
       socat \
       wget \
       curl \
+      pass \
+      gnupg \
       ca-certificates \
-      && update-ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
-# 2a) Download the Docker credential helper (secretservice)
+# 3) Download the Docker credential-pass helper
 ARG HELPER_VER=v0.9.3
 RUN curl -fsSL \
-      https://github.com/docker/docker-credential-helpers/releases/download/${HELPER_VER}/docker-credential-secretservice-linux-amd64 \
-      -o /usr/local/bin/docker-credential-secretservice \
- && chmod +x /usr/local/bin/docker-credential-secretservice
+      https://github.com/docker/docker-credential-helpers/releases/download/${HELPER_VER}/docker-credential-pass-${HELPER_VER}-linux-amd64 \
+      -o /usr/local/bin/docker-credential-pass \
+ && chmod +x /usr/local/bin/docker-credential-pass
 
-# 3) Clone Powerlevel10k
+# 4) Clone Powerlevel10k prompt
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /opt/powerlevel10k
 
-# 4) Clone the WSL SSH-Agent proxy
+# 5) Clone the WSL SSH-Agent proxy
 RUN git clone https://github.com/ubuntu/wsl-ssh-agent-proxy.git /opt/wsl-ssh-agent-proxy
 
-# 5) Create non-root user
+# 6) Create non-root user and wheel group
 RUN addgroup -g "${USER_GID}" "${USER_NAME}" \
  && adduser -D -u "${USER_UID}" -G "${USER_NAME}" -s /bin/zsh "${USER_NAME}" \
  && echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
  && addgroup "${USER_NAME}" wheel
 
-# 6) Prepare /apps
+# 7) Prepare /apps directory
 RUN mkdir -p /apps
 
-# 7) Install shell configs
+# 8) Copy GPG/pass setup script into user bin
+RUN mkdir -p /home/${USER_NAME}/bin \
+ && cp scripts/setup-gpg-pass.sh /home/${USER_NAME}/bin/setup-gpg-pass.sh \
+ && chmod +x /home/${USER_NAME}/bin/setup-gpg-pass.sh
+
+# 9) Install skeleton Zsh configs
 COPY scripts/skel_zshrc /etc/skel/.zshrc
-COPY scripts/p10k.zsh    /etc/skel/.p10k.zsh
+COPY scripts/p10k.zsh   /etc/skel/.p10k.zsh
 RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
  && cp /etc/skel/.zshrc /home/${USER_NAME}/.zshrc \
  && cp /etc/skel/.p10k.zsh /home/${USER_NAME}/.p10k.zsh
 
-# 8) Inject SSH-agent proxy startup
-RUN cat <<'EOF' >> /home/${USER_NAME}/.zshrc
-# Start Windows SSH-Agent proxy
-export SSH_AUTH_SOCK=/tmp/ssh-agent.sock
-nohup /opt/wsl-ssh-agent-proxy/ssh-agent-proxy > /dev/null 2>&1 &
-EOF
+# 10) Inject SSH-agent proxy startup into .zshrc
+RUN printf '\n# Start Windows SSH-Agent proxy\nexport SSH_AUTH_SOCK=/tmp/ssh-agent.sock\nnohup /opt/wsl-ssh-agent-proxy/ssh-agent-proxy > /dev/null 2>&1 &\n' \
+     >> /home/${USER_NAME}/.zshrc
 
-# 9) Configure Docker creds
+# 11) Configure Docker credential helper
 RUN mkdir -p /home/${USER_NAME}/.docker
 COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
 
-# 10) WSL config
+# 12) Copy WSL config
 COPY wsl.conf /etc/wsl.conf
 
-# 11) Final ownership fix and init
+# 13) Final ownership fix (single layer) & init
 RUN chown -R ${USER_UID}:${USER_GID} /opt/powerlevel10k \
  && chown -R ${USER_UID}:${USER_GID} /opt/wsl-ssh-agent-proxy \
  && chown -R ${USER_UID}:${USER_GID} /apps \

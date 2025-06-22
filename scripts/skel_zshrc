@@ -2,9 +2,32 @@
 
 # /etc/skel/.zshrc
 
+# add ~/bin to PATH if it exists
+if [ -d "$HOME/bin" ] && [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
+  PATH="$HOME/bin:$PATH"
+fi
+
 # Jump straight into /apps on interactive shells
 if [[ -o interactive && $(id -u) -ne 0 ]]; then
 cd /apps
+fi
+
+# On first interactive login, ensure GPG & pass are set up
+if [[ -o interactive ]]; then
+  # Only run once per user
+  SETUP_MARKER="$HOME/.gpg_pass_initialized"
+  if [ ! -f "$SETUP_MARKER" ]; then
+    # Check for any secret GPG keys
+    if ! gpg --list-secret-keys --with-colons | grep -q '^sec'; then
+      echo
+      echo "🔐 GPG key and pass store not found. Running setup..."
+      # Run the interactive setup script
+      bash ~/bin/setup-gpg-pass.sh
+    fi
+    # Mark done so we don’t prompt again
+    touch "$SETUP_MARKER"
+    echo
+  fi
 fi
 
 # Show XVE logo in green
@@ -20,11 +43,6 @@ printf '%b\n' "${GREEN}/___/\  \   \___/   /_______  /${RESET}"
 printf '%b\n' "${GREEN}      \_/                   \/ ${RESET}"
 echo
 
-
-# Jump straight into /apps on interactive shells
-if [[ -o interactive && $(id -u) -ne 0 ]]; then
-  cd /apps
-fi
 
 # Make nano the default editor
 export VISUAL=nano
