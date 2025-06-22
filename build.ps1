@@ -39,45 +39,44 @@ function Upload-ReleaseAsset {
         'User-Agent'  = 'XVE-Export-Script'
     }
 
-    # 1) Find or create the release (as draft/prerelease)
-    $tagUrl = "$api/repos/$repo/releases/tags/$tag"
+    # 1) If a release with this tag exists, delete it and its tag
     try {
-        $rel = Invoke-RestMethod -Method Get -Uri $tagUrl -Headers $headers -ErrorAction Stop
-    } catch {
-        $body = @{
-            tag_name   = $tag
-            name       = "XVE Distro $tag"
-            draft      = $true
-            prerelease = $true
-        } | ConvertTo-Json
-        $rel = Invoke-RestMethod -Method Post -Uri "$api/repos/$repo/releases" -Headers $headers -Body $body -ErrorAction Stop
+        $existing = Invoke-RestMethod -Method Get -Uri "$api/repos/$repo/releases/tags/$tag" -Headers $headers -ErrorAction Stop
+
+        # delete release
+        Invoke-RestMethod -Method Delete -Uri "$api/repos/$repo/releases/$($existing.id)" -Headers $headers -ErrorAction Stop
+
+        # delete git tag
+        Invoke-RestMethod -Method Delete -Uri "$api/repos/$repo/git/refs/tags/$tag" -Headers $headers -ErrorAction Stop
+    } catch [System.Net.WebException] {
+        # if 404, no existing release—ignore
     }
 
+    # 2) Create a new published, non-prerelease release
+    $body = @{
+        tag_name   = $tag
+        name       = "XVE Distro $tag"
+        draft      = $false
+        prerelease = $false
+    } | ConvertTo-Json
+
+    $rel = Invoke-RestMethod -Method Post -Uri "$api/repos/$repo/releases" -Headers $headers -Body $body
+
+    # 3) Upload the asset; on failure, delete the release
     try {
-        # 2) Upload the asset
         $assetName = [Uri]::EscapeDataString((Split-Path $filePath -Leaf))
         $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$($rel.id)/assets?name=$assetName"
+
         Invoke-RestMethod -Method Post -Uri $uploadUrl `
-                          -Headers @{
+            -Headers @{
             Authorization = "token $pat"
             'Content-Type' = 'application/octet-stream'
             'User-Agent'   = 'XVE-Export-Script'
         } `
-                          -InFile $filePath -ErrorAction Stop
-
-        # 3) Publish the release
-        $patchBody = @{
-            draft      = $false
-            prerelease = $false
-        } | ConvertTo-Json
-        Invoke-RestMethod -Method Patch -Uri "$api/repos/$repo/releases/$($rel.id)" `
-                          -Headers $headers -Body $patchBody -ErrorAction Stop
-
+            -InFile $filePath -ErrorAction Stop
     } catch {
-        # 4) On failure, delete the release to avoid leftovers
-        $deleteUrl = "$api/repos/$repo/releases/$($rel.id)"
-        Invoke-RestMethod -Method Delete -Uri $deleteUrl -Headers $headers -ErrorAction SilentlyContinue
-        throw "Release upload or publish failed; release $tag has been deleted."
+        Invoke-RestMethod -Method Delete -Uri "$api/repos/$repo/releases/$($rel.id)" -Headers $headers -ErrorAction SilentlyContinue
+        throw "Asset upload failed; release $tag has been deleted."
     }
 }
 
