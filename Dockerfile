@@ -20,7 +20,7 @@ WORKDIR /opt/gitfourchette
 RUN python3 -m venv .venv \
  && . .venv/bin/activate \
  && pip install --upgrade pip setuptools wheel \
- && pip install gitfourchette
+ && pip install git+https://github.com/jorio/gitfourchette.git
 
 # ---------------------
 # Stage 2: Runtime (Alpine)
