@@ -9,7 +9,7 @@ ARG USER_GID=1000
 RUN apk update && apk add --no-cache \
       zsh shadow sudo git docker-cli bash \
       ncurses ncurses-terminfo dos2unix socat wget curl \
-      python3 py3-venv py3-pip python3-dev py3-setuptools \
+      python3 py3-pip python3-dev py3-setuptools python3-virtualenv python3-dev py3-setuptools \
       # GitFourchette Python deps
       py3-pygit2 py3-pygments \
       # Qt6 SVG support
@@ -45,7 +45,7 @@ COPY wsl.conf /etc/wsl.conf
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}
 # create a virtualenv for user packages
-RUN python3 -m venv .venv \
+RUN python3 -m virtualenv .venv \
  && . .venv/bin/activate \
  && pip install --upgrade pip setuptools wheel \
  && pip install gitfourchette \
