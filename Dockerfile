@@ -1,9 +1,8 @@
-# Use the latest Alpine base image
 FROM alpine:latest
 
 LABEL maintainer="jonas@xve.be"
 
-# Install Docker CLI and Git
+# 1) Install prerequisites
 RUN apk update \
  && apk add --no-cache \
       shadow \
@@ -13,24 +12,18 @@ RUN apk update \
       docker-cli \
  && rm -rf /var/cache/apk/*
 
-
-# Create the user at build-time, so default=xve works immediately
+# 2) Create the non-root user at build time
 ARG USER_NAME=xve
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-RUN groupadd --gid "${USER_GID}" "${USER_NAME}" \
- && useradd --create-home \
-            --uid "${USER_UID}" \
-            --gid "${USER_GID}" \
-            --shell /bin/bash \
-            "${USER_NAME}" \
- && apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y sudo \
- && usermod -aG sudo "${USER_NAME}" \
- && rm -rf /var/lib/apt/lists/*
+RUN addgroup -g "${USER_GID}" "${USER_NAME}" \
+ && adduser -D -u "${USER_UID}" -G "${USER_NAME}" -s /bin/sh "${USER_NAME}" \
+ && echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
+ && addgroup "${USER_NAME}" wheel
 
-# Copy your init script & wsl.conf
+# 3) Copy in your WSL config (no boot hook unless you re-add wsl-init.sh)
 COPY wsl.conf /etc/wsl.conf
 
-CMD ["/lib/systemd/systemd"]
+# 4) Launch OpenRC’s init
+CMD ["/sbin/init"]
