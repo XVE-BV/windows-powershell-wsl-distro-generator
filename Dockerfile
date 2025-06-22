@@ -6,22 +6,25 @@ ARG USER_NAME=xve
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-COPY scripts/apk_repositories /etc/apk/repositories
-RUN dos2unix /etc/apk/repositories
-
-# 2) Install prerequisites (including socat)
+# 2) Install prerequisites (including socat, wget)
 RUN apk update && apk add --no-cache \
       zsh \
       shadow \
       sudo \
       git \
       docker-cli \
-      docker-credential-helpers \
       ncurses \
       ncurses-terminfo \
       dos2unix \
       socat \
+      wget \
     && rm -rf /var/cache/apk/*
+
+# 2a) Download the Docker credential helper (secretservice)
+ARG HELPER_VER=v0.7.0
+RUN wget -qO /usr/local/bin/docker-credential-secretservice \
+      https://github.com/docker/docker-credential-helpers/releases/download/${HELPER_VER}/docker-credential-secretservice-linux-amd64 \
+ && chmod +x /usr/local/bin/docker-credential-secretservice
 
 # 3) Clone Powerlevel10k
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /opt/powerlevel10k
