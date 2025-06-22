@@ -2,6 +2,11 @@
 
 # /etc/skel/.zshrc
 
+# Jump straight into /apps on interactive shells
+if [[ -o interactive && $(id -u) -ne 0 ]]; then
+cd /apps
+fi
+
 # Show XVE logo on login
 echo "____  _______   _______________"
 echo "\   \/  /\   \ /   /\_   _____/"
