@@ -41,18 +41,11 @@ RUN dos2unix /etc/skel/.zshrc /etc/skel/.p10k.zsh \
 COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
 COPY wsl.conf /etc/wsl.conf
 
-# 6) Setup Python venv, install GitFourchette, and set update alias
-USER ${USER_NAME}
-WORKDIR /home/${USER_NAME}
-# create a virtualenv for user packages
-RUN python3 -m virtualenv .venv \
- && . .venv/bin/activate \
- && pip install --upgrade pip setuptools wheel \
- && pip install gitfourchette \
- && echo "# GitFourchette venv activation" >> ~/.zshrc \
- && echo "source ~/\.venv/bin/activate" >> ~/.zshrc \
- && echo "# alias to update GitFourchette" >> ~/.zshrc \
- && echo "alias gf-update='pip install --upgrade gitfourchette'" >> ~/.zshrc
+# 6) Install GitFourchette system-wide with override and set update alias
+USER root
+RUN pip3 install --upgrade pip setuptools wheel gitfourchette --break-system-packages \
+ && echo "# alias to update GitFourchette" >> /home/${USER_NAME}/.zshrc \
+ && echo "alias gf-update='pip3 install --upgrade gitfourchette --break-system-packages'" >> /home/${USER_NAME}/.zshrc
 
 # 7) Final ownership fix
 USER root
