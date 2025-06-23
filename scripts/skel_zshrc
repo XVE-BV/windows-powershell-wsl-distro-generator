@@ -130,6 +130,47 @@ alias du='du -h'
 alias df='df -h'
 alias free='free -h'
 
+
+# Function to search and list aliases
+function aliases() {
+    if [[ $# -eq 0 ]]; then
+        # No arguments - show all aliases with descriptions
+        echo "📁 Directory Navigation:"
+        alias | grep -E "(\.\.|\.\.\.|back|home|root)" | sort
+        echo "\n📋 File Listing:"
+        alias | grep -E "^l[a-z]*=" | sort
+        echo "\n📁 Directory Operations:"
+        alias | grep -E "(md=|rd=|mkdir=)" | sort
+        echo "\n⚡ Git Shortcuts:"
+        alias | grep -E "^g[a-z]*=" | sort
+        echo "\n🔧 System & Utils:"
+        alias | grep -E "(clear|history|jobs|reload|src)" | sort
+        echo "\n🌐 Network:"
+        alias | grep -E "(ip=|localip=|ports=)" | sort
+        echo "\n💾 File Operations:"
+        alias | grep -E "(cp=|mv=|rm=|ln=)" | sort
+        echo "\n⚙️  Process & System:"
+        alias | grep -E "(ps=|psg=|top=|du=|df=|free=)" | sort
+        echo "\n📝 Config Files:"
+        alias | grep -E "(zshrc=|bashrc=|vimrc=)" | sort
+    else
+        # Search for aliases matching the keyword(s)
+        local search_term="$*"
+        echo "🔍 Searching aliases for: '$search_term'"
+        echo "----------------------------------------"
+        alias | grep -i "$search_term" | sort
+
+        # Also search in alias names and commands
+        echo "\n📌 Related matches:"
+        alias | grep -E "($search_term|${search_term}=)" | sort
+    fi
+}
+
+# Alternative shorter function name
+function als() {
+    aliases "$@"
+}
+
 # Powerlevel10k instant prompt (if installed)
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
