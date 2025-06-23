@@ -45,8 +45,90 @@ alias sc='sail composer '
 alias sm='sa migrate'
 alias smf='sa migrate:fresh'
 alias smfs='sa migrate:fresh --seed'
-alias sus='s up -d'
-alias sdown='s stop'
+alias sup='s up -d'
+alias suspend='s stop'
+alias sus='suspend'
+
+# Directory navigation aliases
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias ......='cd ../../../../..'
+
+# Alternative versions with more explicit names
+alias back='cd ..'
+alias back2='cd ../..'
+alias back3='cd ../../..'
+alias back4='cd ../../../..'
+alias back5='cd ../../../../..'
+
+# Quick directory shortcuts
+alias ~='cd ~'
+alias /='cd /'
+alias home='cd ~'
+alias root='cd /'
+
+# List directory contents with navigation
+alias l='ls -la'
+alias ll='ls -alF'
+alias la='ls -A'
+alias lc='ls -ltcr'   # sort by and show change time
+alias lk='ls -lSr'    # sort by size
+alias lm='ls -ltr'    # sort by modification time
+alias lr='ls -lR'     # recursive ls
+alias lt='ls -ltr'    # sort by date
+
+# Directory operations
+alias md='mkdir -p'
+alias rd='rmdir'
+alias mkdir='mkdir -p'
+
+# Show current path
+alias pwd='pwd && pwd | pbcopy'  # Also copy to clipboard (macOS)
+alias path='echo $PATH | tr ":" "\n"'
+
+# Quick edit common files
+alias zshrc='nano ~/.zshrc'
+alias bashrc='nano ~/.bashrc'
+alias vimrc='nano ~/.vimrc'
+
+# Reload shell configuration
+alias reload='source ~/.zshrc'
+alias src='source ~/.zshrc'
+
+# Git shortcuts (if you use git)
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git log --oneline'
+
+# System shortcuts
+alias c='clear'
+alias h='history'
+alias j='jobs'
+
+# Network and system info
+alias ip='curl ifconfig.me'
+alias localip='ipconfig getifaddr en0'  # macOS
+alias ports='netstat -tuln'
+
+# File operations
+alias cp='cp -i'      # interactive copy
+alias mv='mv -i'      # interactive move
+alias rm='rm -i'      # interactive remove
+alias ln='ln -i'      # interactive link
+
+# Process management
+alias ps='ps aux'
+alias psg='ps aux | grep'
+alias top='top -o cpu'
+
+# Disk usage
+alias du='du -h'
+alias df='df -h'
+alias free='free -h'
 
 # Powerlevel10k instant prompt (if installed)
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
