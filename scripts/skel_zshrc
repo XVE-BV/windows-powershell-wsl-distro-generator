@@ -48,6 +48,7 @@ alias smfs='sa migrate:fresh --seed'
 alias sup='s up -d'
 alias suspend='s stop'
 alias sus='suspend'
+alias sr='sc run dev'
 
 # Directory navigation aliases
 alias ..='cd ..'
