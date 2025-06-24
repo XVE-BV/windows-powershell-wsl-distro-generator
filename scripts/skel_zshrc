@@ -86,7 +86,7 @@ alias rd='rmdir'
 alias mkdir='mkdir -p'
 
 # Show current path
-alias pwd='pwd && pwd | pbcopy'  # Also copy to clipboard (macOS)
+alias pwd='pwd'  # Removed pbcopy (macOS specific)
 alias path='echo $PATH | tr ":" "\n"'
 
 # Quick edit common files
@@ -112,24 +112,24 @@ alias j='jobs'
 
 # Network and system info
 alias ip='curl ifconfig.me'
-alias localip='ipconfig getifaddr en0'  # macOS
+alias localip='hostname -i'  # Alpine Linux compatible
 alias ports='netstat -tuln'
 
-# File operations
-alias cp='cp -i'      # interactive copy
-alias mv='mv -i'      # interactive move
-alias rm='rm -i'      # interactive remove
-alias ln='ln -i'      # interactive link
+# File operations (removed -i flags for BusyBox compatibility)
+alias cp='cp'
+alias mv='mv'
+alias rm='rm'
+alias ln='ln'
 
 # Process management
 alias ps='ps aux'
 alias psg='ps aux | grep'
-alias top='top -o cpu'
+alias top='top'
 
 # Disk usage
 alias du='du -h'
 alias df='df -h'
-alias free='free -h'
+alias free='free'  # Alpine's free doesn't support -h
 
 
 # Function to search and list aliases
@@ -195,14 +195,14 @@ if [[ -o interactive ]]; then
 
       name=${src##*/}
       link="$DST/$name"
-	
-	if [[ ! -f $link ]]; then
 
-		ln -sfnT "$src" "$link"
+	if [[ ! -f $link ]]; then
+		# BusyBox ln doesn't support -T flag, use -sf instead
+		ln -sf "$src" "$link"
       		echo "🔗 symlinking $src to $link"
-      		chmod 600 "$link"
+      		chmod 600 "$link" 2>/dev/null || true
 	fi
-	
+
     done
 
     chmod 700 "$DST"
@@ -223,3 +223,5 @@ if [[ -o interactive && -z $SSH_AUTH_SOCK ]]; then
     [[ -e $key && $key != *.pub ]] && ssh-add "$key" >/dev/null 2>&1
   done
 fi
+
+/usr/local/bin/auto-setup.sh
