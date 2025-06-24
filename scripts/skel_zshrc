@@ -8,9 +8,9 @@ if [ -d "$HOME/bin" ] && [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
   PATH="$HOME/bin:$PATH"
 fi
 
-# Jump straight into /apps on interactive shells
-if [[ -o interactive && $(id -u) -ne 0 ]]; then
-cd /apps
+# If we’ve been dropped into Windows’ System32 on login, switch into /apps
+if [ "$PWD" = "/mnt/c/Windows/System32" ] && [ -d "/apps" ]; then
+  cd /apps
 fi
 
 # Show XVE logo in green
