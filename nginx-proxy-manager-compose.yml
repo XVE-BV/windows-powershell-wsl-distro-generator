@@ -1,18 +1,20 @@
-version: '3.8'
 services:
-  xve:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: xve-wsl:latest
-    container_name: xve-container
+  nginx-proxy-manager:
+    image: 'docker.io/jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
-    privileged: true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "8080:8080"
-      - "81:81"
-      - "8443:8443"
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    environment:
+      # Optional: Set timezone
+      - TZ=Europe/Brussels
+    networks:
+      - npm-network
 
-  # ... your existing nginx-proxy-manager services here ...
+networks:
+  npm-network:
+    driver: bridge
