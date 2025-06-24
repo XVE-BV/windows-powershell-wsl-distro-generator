@@ -1,25 +1,50 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 1) Ensure Docker daemon is reachable
+# Auto-setup script for initializing Nginx Proxy Manager in WSL
+# Copies and builds are handled by Dockerfile; here we simply start the services.
+
+# Marker to prevent re-running
+SETUP_FLAG="/tmp/.xve-setup-done"
+if [ -f "$SETUP_FLAG" ]; then
+  echo "✅ nginx-proxy-manager already set up and running"
+  exit 0
+fi
+
+# Ensure Docker daemon is reachable
 if ! docker info >/dev/null 2>&1; then
   echo "❌ Docker daemon isn’t reachable. Make sure Docker Desktop or WSL dockerd is running."
   exit 1
 fi
 
-# 2) Determine script and project paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Project root is one level up from scripts directory
-PROJECT_ROOT="${SCRIPT_DIR%/*}"
-cd "$PROJECT_ROOT"
+# Go to the directory where compose file was copied by Dockerfile
+COMPOSE_DIR="/opt/nginx-proxy-manager"
+if [ ! -f "$COMPOSE_DIR/docker-compose.yml" ]; then
+  echo "❌ Compose file not found at $COMPOSE_DIR/docker-compose.yml"
+  exit 1
+fi
+cd "$COMPOSE_DIR"
 
-echo "🔍 Project root determined as: $PROJECT_ROOT"
-
-echo "🔨 Building and starting containers via: docker compose -f nginx-proxy-manager-compose.yml up -d"
-# 3) Build (if needed) & start services
-if ! docker compose -f nginx-proxy-manager-compose.yml up -d; then
-  echo "❌ Failed to build or start containers. Check errors above."
+echo "🔨 Starting Nginx Proxy Manager (no build step required)"
+if ! docker compose up -d; then
+  echo "❌ Failed to start containers. Check errors above."
   exit 1
 fi
 
-echo "✅ All containers are up and running."
+# Wait for admin interface
+echo "⏳ Waiting for admin interface to become available..."
+for i in {1..60}; do
+  if curl -s http://localhost:81 >/dev/null 2>&1; then
+    echo "🚀 nginx-proxy-manager is up!"
+    break
+  fi
+  sleep 1
+done
+
+# Mark setup complete
+touch "$SETUP_FLAG"
+
+echo "✅ Setup complete!"
+echo "🔑 Admin interface: http://localhost:81"
+echo "🌐 HTTP proxy: http://localhost:8080"
+echo "🔒 HTTPS proxy: https://localhost:8443"
