@@ -9,7 +9,7 @@ if [ -d "$HOME/bin" ] && [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
 fi
 
 # If we’ve been dropped into Windows’ System32 on login, switch into /apps
-if [ "$PWD" = "/mnt/c/Windows/System32" ] && [ -d "/apps" ]; then
+if ([ "$PWD" = "/mnt/c/Windows/System32" ] || [[ "$PWD" != /apps/* ]]) && [ -d "/apps" ]; then
   cd /apps
 fi
 
