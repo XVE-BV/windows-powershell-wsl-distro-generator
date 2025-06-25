@@ -124,7 +124,7 @@ alias ports='netstat -tuln'
 alias cp='cp -i'      # interactive copy
 alias mv='mv -i'      # interactive move
 alias rm='rm -i'      # interactive remove
-alias ln='ln -i'      # interactive link
+# alias ln='ln -i'      # interactive link (disabled - BusyBox ln doesn't support -i)
 
 # Process management
 alias ps='ps aux'
