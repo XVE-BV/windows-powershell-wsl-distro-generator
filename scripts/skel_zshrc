@@ -131,6 +131,10 @@ alias du='du -h'
 alias df='df -h'
 alias free='free'  # Alpine's free doesn't support -h
 
+nginx-man-up() {
+  docker start nginx-proxy-manager || \
+  ( cd /opt/nginx-proxy-manager && docker compose up -d )
+}
 
 # Function to search and list aliases
 function aliases() {
