@@ -3,8 +3,11 @@ services:
     image: 'docker.io/jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
     ports:
+      # HTTP - using port 8080 to avoid conflicts with system services
       - '8080:80'
-      - '8081:81'
+      # Admin interface - using port 8181 to avoid conflicts
+      - '8181:81'
+      # HTTPS - using port 8443 to avoid requiring admin privileges
       - '8443:443'
     volumes:
       - ./data:/data
@@ -14,6 +17,9 @@ services:
       - TZ=Europe/Brussels
     networks:
       - npm-network
+    # Add extra hosts to resolve Laravel Sail container
+    extra_hosts:
+      - "sail-test-project.test:host-gateway"
 
 networks:
   npm-network:
