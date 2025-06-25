@@ -45,6 +45,6 @@ done
 touch "$SETUP_FLAG"
 
 echo "✅ Setup complete!"
-echo "🔑 Admin interface: http://localhost:81"
+echo "🔑 Admin interface: http://localhost:8081"
 echo "🌐 HTTP proxy: http://localhost:8080"
 echo "🔒 HTTPS proxy: https://localhost:8443"
