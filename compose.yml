@@ -2,5 +2,5 @@ services:
   xve-distro:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Docker.gitfourchette
     image: xve-distro:latest

@@ -228,3 +228,9 @@ if [[ -o interactive && -z $SSH_AUTH_SOCK ]]; then
     [[ -e $key && $key != *.pub ]] && ssh-add "$key" >/dev/null 2>&1
   done
 fi
+
+function gf() {
+    echo "🚀 Launching GitFourchette..."
+    nohup flatpak run org.gitfourchette.gitfourchette &
+    echo "✅ GitFourchette started in persistent background"
+}
