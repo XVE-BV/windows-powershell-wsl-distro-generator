@@ -181,8 +181,8 @@ download_patches() {
 main() {
     log "Starting XVE self-update process..."
 
-    # Make sure patch manager is executable
-    chmod +x "$PATCH_MANAGER"
+    # Patch manager permissions are set in Dockerfile during build
+    log "Patch manager executable permissions handled by Dockerfile"
 
     # Check dependencies
     if ! check_dependencies; then
