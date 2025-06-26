@@ -133,7 +133,7 @@ download_patches() {
 
     # Find the extracted directory (GitHub creates a directory with repo name and commit hash)
     local extracted_dir
-    extracted_dir=$(find "$TEMP_PATCHES_DIR" -maxdepth 1 -type d -name "${PATCH_REPO_NAME}-*" | head -n1)
+    extracted_dir=$(find "$TEMP_PATCHES_DIR" -maxdepth 1 -type d -name "${PATCH_REPO_OWNER}-${PATCH_REPO_NAME}-*" | head -n1)
 
     if [[ -z "$extracted_dir" ]]; then
         error "Could not find extracted patches directory"

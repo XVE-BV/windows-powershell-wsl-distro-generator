@@ -44,7 +44,8 @@ COPY scripts/selfupdate /usr/local/bin/selfupdate
 RUN mkdir -p /opt/xve-patches/available
 RUN chmod +x /usr/local/bin/patch-manager.sh /usr/local/bin/selfupdate \
  && mkdir -p /opt/xve-patches/backups \
- && echo '{"applied_patches": [], "last_update": null, "version": "1.0"}' > /opt/xve-patches/applied_patches.json
+ && echo '{"applied_patches": [], "last_update": null, "version": "1.0"}' > /opt/xve-patches/applied_patches.json \
+ && ln -s /usr/local/bin/patch-manager.sh /usr/local/bin/patch-manager
 
 # 9) Final ownership fix & init
 RUN chown -R ${USER_UID}:${USER_GID} /opt/powerlevel10k \
