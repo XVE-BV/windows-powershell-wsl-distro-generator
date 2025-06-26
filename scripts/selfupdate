@@ -10,7 +10,7 @@ PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
 
 # Configuration - can be overridden by environment variables
 PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-jonasvanderhaegen-xve}"
-PATCH_REPO_NAME="${XVE_PATCH_REPO_NAME:-xve-wsl-patches}"
+PATCH_REPO_NAME="${XVE_PATCH_REPO_NAME:-windows-powershell-wsl-distro-patches}"
 PATCH_RELEASE_TAG="${XVE_PATCH_RELEASE_TAG:-latest}"
 PATCHES_DIR="/opt/xve-patches/available"
 TEMP_PATCHES_DIR="/tmp/xve-patches-download"
@@ -203,7 +203,7 @@ show_usage() {
     echo
     echo "Environment Variables:"
     echo "  XVE_PATCH_REPO_OWNER    GitHub repository owner (default: jonasvanderhaegen-xve)"
-    echo "  XVE_PATCH_REPO_NAME     GitHub repository name (default: xve-wsl-patches)"
+    echo "  XVE_PATCH_REPO_NAME     GitHub repository name (default: windows-powershell-wsl-distro-patches)"
     echo "  XVE_PATCH_RELEASE_TAG   Release tag to download (default: latest)"
     echo
     echo "Examples:"

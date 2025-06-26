@@ -19,12 +19,12 @@ The patch system now downloads patches from external GitHub repositories, allowi
 ### Default Configuration
 
 By default, the system is configured to download patches from:
-- **Repository**: `jonasvanderhaegen-xve/xve-wsl-patches`
+- **Repository**: `jonasvanderhaegen-xve/windows-powershell-wsl-distro-patches`
 - **Release**: `latest`
 
 ### Setting Up Your Patch Repository
 
-1. **Create a GitHub repository** for your patches (e.g., `your-org/xve-wsl-patches`)
+1. **Create a GitHub repository** for your patches (e.g., `your-org/windows-powershell-wsl-distro-patches`)
 
 2. **Create a `patches` directory** in the repository root
 
