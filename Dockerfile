@@ -41,7 +41,7 @@ COPY wsl.conf /etc/wsl.conf
 # 8) Install patch management system
 COPY scripts/patch-manager.sh /usr/local/bin/patch-manager
 COPY scripts/selfupdate /usr/local/bin/selfupdate
-COPY scripts/patches/ /opt/xve-patches/available/
+RUN mkdir -p /opt/xve-patches/available
 RUN chmod +x /usr/local/bin/patch-manager /usr/local/bin/selfupdate \
  && mkdir -p /opt/xve-patches/backups \
  && echo '{"applied_patches": [], "last_update": null, "version": "1.0"}' > /opt/xve-patches/applied_patches.json
