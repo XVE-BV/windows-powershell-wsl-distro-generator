@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# XVE Self-Update Command
+# Simple wrapper for the patch management system
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
+
+# Check if patch manager exists
+if [[ ! -f "$PATCH_MANAGER" ]]; then
+    echo "Error: Patch manager not found at $PATCH_MANAGER"
+    exit 1
+fi
+
+# Make sure patch manager is executable
+chmod +x "$PATCH_MANAGER"
+
+# Run the patch manager with selfupdate command
+exec "$PATCH_MANAGER" selfupdate "$@"
