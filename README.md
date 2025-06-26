@@ -25,6 +25,7 @@ Managing complex dev stacks in containers adds overhead and variability. This ge
 * **Shell Environment**: Zsh with preconfigured aliases and functions (e.g. Laravel Sail shortcuts).
 * **Utilities Included**: Docker CLI, optional Docker Compose, Git, `tput` (ncurses), and more.
 * **Seamless Mounts**: `wsl.conf` sets WSL automount options and default user.
+* **Patch Management**: Laravel-style migration system for applying updates safely with backup/rollback.
 
 ---
 
@@ -62,6 +63,23 @@ cd path\to\repo
 [Check other repository for this](https://github.com/jonasvanderhaegen-xve/windows-powershell-wsl-distro-importer)
 
 You will log in as user `xve` into `/apps`, ready to mount projects and run Docker/Sail commands.
+
+### Applying System Updates
+
+The distro includes a patch management system for safe updates:
+
+```bash
+# Apply all available patches
+selfupdate
+
+# Check patch status
+patch-manager status
+
+# List available patches
+patch-manager list
+```
+
+For detailed information about the patch system, see [PATCH_SYSTEM.md](PATCH_SYSTEM.md).
 
 ---
 

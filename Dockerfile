@@ -9,7 +9,7 @@ ARG USER_GID=1000
 RUN apk update && apk add --no-cache \
       zsh shadow sudo git docker-cli bash \
       ncurses ncurses-terminfo dos2unix socat wget curl \
-      openssh \
+      openssh jq \
     && rm -rf /var/cache/apk/*
 
 # 2) (Optional) Clone Powerlevel10k prompt
@@ -38,8 +38,17 @@ COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
 # 7) Copy WSL config
 COPY wsl.conf /etc/wsl.conf
 
-# 8) Final ownership fix & init
+# 8) Install patch management system
+COPY scripts/patch-manager.sh /usr/local/bin/patch-manager.sh
+COPY scripts/selfupdate /usr/local/bin/selfupdate
+RUN mkdir -p /opt/xve-patches/available
+RUN chmod +x /usr/local/bin/patch-manager.sh /usr/local/bin/selfupdate \
+ && mkdir -p /opt/xve-patches/backups \
+ && echo '{"applied_patches": [], "last_update": null, "version": "1.0"}' > /opt/xve-patches/applied_patches.json \
+ && ln -s /usr/local/bin/patch-manager.sh /usr/local/bin/patch-manager
+
+# 9) Final ownership fix & init
 RUN chown -R ${USER_UID}:${USER_GID} /opt/powerlevel10k \
- && chown -R ${USER_UID}:${USER_GID} /apps /home/${USER_NAME}
+ && chown -R ${USER_UID}:${USER_GID} /apps /home/${USER_NAME} /opt/xve-patches
 
 CMD ["/sbin/init"]
