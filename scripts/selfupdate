@@ -6,7 +6,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
+
+# Try to find patch-manager.sh in the installed location first, then fall back to relative path
+if [[ -f "/usr/local/bin/patch-manager.sh" ]]; then
+    PATCH_MANAGER="/usr/local/bin/patch-manager.sh"
+elif [[ -f "$SCRIPT_DIR/patch-manager.sh" ]]; then
+    PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
+else
+    PATCH_MANAGER="/usr/local/bin/patch-manager.sh"  # Default expected location
+fi
 
 # Configuration - can be overridden by environment variables
 PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-jonasvanderhaegen-xve}"
