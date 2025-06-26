@@ -1,19 +1,224 @@
 #!/bin/bash
 
 # XVE Self-Update Command
-# Simple wrapper for the patch management system
+# Fetches patches from external source and applies them using the patch management system
+
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
 
-# Check if patch manager exists
-if [[ ! -f "$PATCH_MANAGER" ]]; then
-    echo "Error: Patch manager not found at $PATCH_MANAGER"
-    exit 1
-fi
+# Configuration - can be overridden by environment variables
+PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-jonasvanderhaegen-xve}"
+PATCH_REPO_NAME="${XVE_PATCH_REPO_NAME:-xve-wsl-patches}"
+PATCH_RELEASE_TAG="${XVE_PATCH_RELEASE_TAG:-latest}"
+PATCHES_DIR="/opt/xve-patches/available"
+TEMP_PATCHES_DIR="/tmp/xve-patches-download"
 
-# Make sure patch manager is executable
-chmod +x "$PATCH_MANAGER"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Run the patch manager with selfupdate command
-exec "$PATCH_MANAGER" selfupdate "$@"
+# Logging functions
+log() {
+    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+# Check if required tools are available
+check_dependencies() {
+    local missing_deps=()
+
+    if ! command -v curl >/dev/null 2>&1; then
+        missing_deps+=("curl")
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        missing_deps+=("jq")
+    fi
+
+    if ! command -v tar >/dev/null 2>&1; then
+        missing_deps+=("tar")
+    fi
+
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        error "Missing required dependencies: ${missing_deps[*]}"
+        error "Please install the missing dependencies and try again"
+        return 1
+    fi
+
+    return 0
+}
+
+# Download patches from GitHub repository
+download_patches() {
+    log "Downloading patches from GitHub repository: $PATCH_REPO_OWNER/$PATCH_REPO_NAME"
+
+    # Clean up any existing temp directory
+    rm -rf "$TEMP_PATCHES_DIR"
+    mkdir -p "$TEMP_PATCHES_DIR"
+
+    # Get release information
+    local api_url
+    if [[ "$PATCH_RELEASE_TAG" == "latest" ]]; then
+        api_url="https://api.github.com/repos/$PATCH_REPO_OWNER/$PATCH_REPO_NAME/releases/latest"
+    else
+        api_url="https://api.github.com/repos/$PATCH_REPO_OWNER/$PATCH_REPO_NAME/releases/tags/$PATCH_RELEASE_TAG"
+    fi
+
+    log "Fetching release information from: $api_url"
+
+    # Download release information
+    local release_info
+    if ! release_info=$(curl -s -f "$api_url"); then
+        error "Failed to fetch release information from GitHub"
+        error "Please check if the repository $PATCH_REPO_OWNER/$PATCH_REPO_NAME exists and has releases"
+        return 1
+    fi
+
+    # Extract download URL for the source code tarball
+    local download_url
+    download_url=$(echo "$release_info" | jq -r '.tarball_url')
+
+    if [[ "$download_url" == "null" || -z "$download_url" ]]; then
+        error "Could not find download URL in release information"
+        return 1
+    fi
+
+    local release_tag
+    release_tag=$(echo "$release_info" | jq -r '.tag_name')
+    log "Found release: $release_tag"
+
+    # Download and extract the tarball
+    log "Downloading patches from: $download_url"
+    local tarball_path="$TEMP_PATCHES_DIR/patches.tar.gz"
+
+    if ! curl -L -s -f -o "$tarball_path" "$download_url"; then
+        error "Failed to download patches tarball"
+        return 1
+    fi
+
+    # Extract tarball
+    log "Extracting patches..."
+    if ! tar -xzf "$tarball_path" -C "$TEMP_PATCHES_DIR"; then
+        error "Failed to extract patches tarball"
+        return 1
+    fi
+
+    # Find the extracted directory (GitHub creates a directory with repo name and commit hash)
+    local extracted_dir
+    extracted_dir=$(find "$TEMP_PATCHES_DIR" -maxdepth 1 -type d -name "${PATCH_REPO_NAME}-*" | head -n1)
+
+    if [[ -z "$extracted_dir" ]]; then
+        error "Could not find extracted patches directory"
+        return 1
+    fi
+
+    # Look for patches in the extracted directory
+    local patches_source_dir="$extracted_dir/patches"
+    if [[ ! -d "$patches_source_dir" ]]; then
+        error "No 'patches' directory found in the downloaded repository"
+        error "Expected to find patches in: $patches_source_dir"
+        return 1
+    fi
+
+    # Copy patches to the available patches directory
+    log "Installing patches to $PATCHES_DIR"
+    sudo mkdir -p "$PATCHES_DIR"
+
+    # Copy all .sh files from the patches directory
+    local patch_count=0
+    for patch_file in "$patches_source_dir"/*.sh; do
+        if [[ -f "$patch_file" ]]; then
+            local patch_name
+            patch_name=$(basename "$patch_file")
+            sudo cp "$patch_file" "$PATCHES_DIR/$patch_name"
+            sudo chmod +x "$PATCHES_DIR/$patch_name"
+            log "Installed patch: $patch_name"
+            ((patch_count++))
+        fi
+    done
+
+    if [[ $patch_count -eq 0 ]]; then
+        warning "No patch files (.sh) found in the downloaded repository"
+    else
+        success "Successfully downloaded and installed $patch_count patch(es)"
+    fi
+
+    # Clean up temporary directory
+    rm -rf "$TEMP_PATCHES_DIR"
+
+    return 0
+}
+
+# Main execution
+main() {
+    log "Starting XVE self-update process..."
+
+    # Check if patch manager exists
+    if [[ ! -f "$PATCH_MANAGER" ]]; then
+        error "Patch manager not found at $PATCH_MANAGER"
+        exit 1
+    fi
+
+    # Make sure patch manager is executable
+    chmod +x "$PATCH_MANAGER"
+
+    # Check dependencies
+    if ! check_dependencies; then
+        exit 1
+    fi
+
+    # Download patches from external source
+    if ! download_patches; then
+        error "Failed to download patches from external source"
+        exit 1
+    fi
+
+    # Run the patch manager with selfupdate command
+    log "Applying downloaded patches..."
+    exec "$PATCH_MANAGER" selfupdate "$@"
+}
+
+# Show usage information
+show_usage() {
+    echo "XVE Self-Update Command"
+    echo "Downloads patches from external GitHub repository and applies them"
+    echo
+    echo "Usage: $0 [options]"
+    echo
+    echo "Environment Variables:"
+    echo "  XVE_PATCH_REPO_OWNER    GitHub repository owner (default: jonasvanderhaegen-xve)"
+    echo "  XVE_PATCH_REPO_NAME     GitHub repository name (default: xve-wsl-patches)"
+    echo "  XVE_PATCH_RELEASE_TAG   Release tag to download (default: latest)"
+    echo
+    echo "Examples:"
+    echo "  $0                                    # Download from latest release"
+    echo "  XVE_PATCH_RELEASE_TAG=v1.0.0 $0     # Download from specific release"
+    echo "  XVE_PATCH_REPO_OWNER=myorg $0       # Download from different repository"
+}
+
+# Handle command line arguments
+case "${1:-}" in
+    "-h"|"--help"|"help")
+        show_usage
+        exit 0
+        ;;
+    *)
+        main "$@"
+        ;;
+esac
