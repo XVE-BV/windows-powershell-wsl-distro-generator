@@ -13,7 +13,11 @@ if [[ -f "/usr/local/bin/patch-manager.sh" ]]; then
 elif [[ -f "$SCRIPT_DIR/patch-manager.sh" ]]; then
     PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
 else
-    PATCH_MANAGER="/usr/local/bin/patch-manager.sh"  # Default expected location
+    error "Patch manager not found in expected locations:"
+    error "  - /usr/local/bin/patch-manager.sh"
+    error "  - $SCRIPT_DIR/patch-manager.sh"
+    error "Please ensure the patch manager is properly installed or run from the correct directory."
+    exit 1
 fi
 
 # Configuration - can be overridden by environment variables
@@ -176,12 +180,6 @@ download_patches() {
 # Main execution
 main() {
     log "Starting XVE self-update process..."
-
-    # Check if patch manager exists
-    if [[ ! -f "$PATCH_MANAGER" ]]; then
-        error "Patch manager not found at $PATCH_MANAGER"
-        exit 1
-    fi
 
     # Make sure patch manager is executable
     chmod +x "$PATCH_MANAGER"
