@@ -7,26 +7,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Try to find patch-manager.sh in the installed location first, then fall back to relative path
-if [[ -f "/usr/local/bin/patch-manager.sh" ]]; then
-    PATCH_MANAGER="/usr/local/bin/patch-manager.sh"
-elif [[ -f "$SCRIPT_DIR/patch-manager.sh" ]]; then
-    PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
-else
-    error "Patch manager not found in expected locations:"
-    error "  - /usr/local/bin/patch-manager.sh"
-    error "  - $SCRIPT_DIR/patch-manager.sh"
-    error "Please ensure the patch manager is properly installed or run from the correct directory."
-    exit 1
-fi
-
-# Configuration - can be overridden by environment variables
-PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-jonasvanderhaegen-xve}"
-PATCH_REPO_NAME="${XVE_PATCH_REPO_NAME:-windows-powershell-wsl-distro-patches}"
-PATCH_RELEASE_TAG="${XVE_PATCH_RELEASE_TAG:-latest}"
-PATCHES_DIR="/opt/xve-patches/available"
-TEMP_PATCHES_DIR="/tmp/xve-patches-download"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -50,6 +30,26 @@ success() {
 warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
+
+# Try to find patch-manager.sh in the installed location first, then fall back to relative path
+if [[ -f "/usr/local/bin/patch-manager.sh" ]]; then
+    PATCH_MANAGER="/usr/local/bin/patch-manager.sh"
+elif [[ -f "$SCRIPT_DIR/patch-manager.sh" ]]; then
+    PATCH_MANAGER="$SCRIPT_DIR/patch-manager.sh"
+else
+    error "Patch manager not found in expected locations:"
+    error "  - /usr/local/bin/patch-manager.sh"
+    error "  - $SCRIPT_DIR/patch-manager.sh"
+    error "Please ensure the patch manager is properly installed or run from the correct directory."
+    exit 1
+fi
+
+# Configuration - can be overridden by environment variables
+PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-jonasvanderhaegen-xve}"
+PATCH_REPO_NAME="${XVE_PATCH_REPO_NAME:-windows-powershell-wsl-distro-patches}"
+PATCH_RELEASE_TAG="${XVE_PATCH_RELEASE_TAG:-latest}"
+PATCHES_DIR="/opt/xve-patches/available"
+TEMP_PATCHES_DIR="/tmp/xve-patches-download"
 
 # Check if required tools are available
 check_dependencies() {

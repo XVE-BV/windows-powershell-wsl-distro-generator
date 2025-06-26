@@ -39,10 +39,10 @@ COPY scripts/docker-config.json /home/${USER_NAME}/.docker/config.json
 COPY wsl.conf /etc/wsl.conf
 
 # 8) Install patch management system
-COPY scripts/patch-manager.sh /usr/local/bin/patch-manager
+COPY scripts/patch-manager.sh /usr/local/bin/patch-manager.sh
 COPY scripts/selfupdate /usr/local/bin/selfupdate
 RUN mkdir -p /opt/xve-patches/available
-RUN chmod +x /usr/local/bin/patch-manager /usr/local/bin/selfupdate \
+RUN chmod +x /usr/local/bin/patch-manager.sh /usr/local/bin/selfupdate \
  && mkdir -p /opt/xve-patches/backups \
  && echo '{"applied_patches": [], "last_update": null, "version": "1.0"}' > /opt/xve-patches/applied_patches.json
 
