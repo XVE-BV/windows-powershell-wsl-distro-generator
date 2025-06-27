@@ -45,7 +45,7 @@ else
 fi
 
 # Configuration - can be overridden by environment variables
-PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-jonasvanderhaegen-xve}"
+PATCH_REPO_OWNER="${XVE_PATCH_REPO_OWNER:-XVE-BV}"
 PATCH_REPO_NAME="${XVE_PATCH_REPO_NAME:-windows-powershell-wsl-distro-patches}"
 PATCH_RELEASE_TAG="${XVE_PATCH_RELEASE_TAG:-latest}"
 PATCHES_DIR="/opt/xve-patches/available"
@@ -208,7 +208,7 @@ show_usage() {
     echo "Usage: $0 [options]"
     echo
     echo "Environment Variables:"
-    echo "  XVE_PATCH_REPO_OWNER    GitHub repository owner (default: jonasvanderhaegen-xve)"
+    echo "  XVE_PATCH_REPO_OWNER    GitHub repository owner (default: XVE-BV)"
     echo "  XVE_PATCH_REPO_NAME     GitHub repository name (default: windows-powershell-wsl-distro-patches)"
     echo "  XVE_PATCH_RELEASE_TAG   Release tag to download (default: latest)"
     echo
