@@ -19,7 +19,7 @@ $container   = 'xve-builder'
 $outputTar   = Join-Path $scriptDir '..\windows-powershell-wsl-distro-importer\xve-distro.tar'
 
 # GitHub settings
-$ghRepo     = 'jonasvanderhaegen-xve/xve-artifacts'  # replace
+$ghRepo     = 'XVE-BV/xve-wsl-artifacts'  # replace
 $versionTag = "export-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
 
 # Retrieve PAT if Upload
