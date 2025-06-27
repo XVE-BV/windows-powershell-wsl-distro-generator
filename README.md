@@ -1,4 +1,4 @@
-<a href="https://github.com/users/jonasvanderhaegen-xve/projects/1">View Project Kanban Board</a>
+<a href="https://github.com/users/XVE-BV/projects/1">View Project Kanban Board</a>
 
 ---
 
@@ -60,7 +60,7 @@ cd path\to\repo
 
 ### Import & Launch
 
-[Check other repository for this](https://github.com/jonasvanderhaegen-xve/windows-powershell-wsl-distro-importer)
+[Check other repository for this](https://github.com/XVE-BV/windows-powershell-wsl-distro-importer)
 
 You will log in as user `xve` into `/apps`, ready to mount projects and run Docker/Sail commands.
 
